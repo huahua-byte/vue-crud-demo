@@ -20,6 +20,7 @@ import {
   isFutureBookingDateTime,
   isIsoDateString,
   validateBookingDraft,
+  validateVenueDraft,
   isVenueStatus,
   loadBookings,
   loadSeedMeta,
@@ -29,6 +30,8 @@ import {
   type BookingDraft,
   type BookingValidationResult,
   type Venue,
+  type VenueDraft,
+  type VenueValidationResult,
 } from './index'
 
 const venueFilter = createDefaultVenueSearchFilter()
@@ -39,6 +42,7 @@ const venue: Venue = {
   name: 'Main Hall',
   location: '1F East Wing',
   capacity: 120,
+  hourlyPrice: 300,
   amenities: ['projector', 'sound-system'],
   openingTime: '08:00',
   closingTime: '22:00',
@@ -46,6 +50,18 @@ const venue: Venue = {
   description: 'Primary event venue',
   createdAt: '2026-03-26T08:00:00.000Z',
   updatedAt: '2026-03-26T08:00:00.000Z',
+}
+
+const venueDraft: VenueDraft = {
+  name: venue.name,
+  location: venue.location,
+  capacity: venue.capacity,
+  hourlyPrice: venue.hourlyPrice,
+  amenities: [...venue.amenities],
+  openingTime: venue.openingTime,
+  closingTime: venue.closingTime,
+  status: venue.status,
+  description: venue.description,
 }
 
 const booking: Booking = {
@@ -100,6 +116,7 @@ const cell = createWeeklyCalendarCell({
 const firstVenueStatus = VENUE_STATUSES[0]
 const firstBookingStatus = BOOKING_STATUSES[0]
 const validDraftValidation: BookingValidationResult = validateBookingDraft(bookingDraft)
+const validVenueDraftValidation: VenueValidationResult = validateVenueDraft(venueDraft)
 const invalidDraftValidation = validateBookingDraft({
   ...bookingDraft,
   startTime: '07:00',
@@ -131,6 +148,10 @@ if (!validDraftValidation.isValid) {
   throw new Error('Expected a valid booking draft validation result.')
 }
 
+if (!validVenueDraftValidation.isValid) {
+  throw new Error('Expected a valid venue draft validation result.')
+}
+
 if (invalidDraftValidation.isValid) {
   throw new Error('Expected invalid business-hour booking draft validation result.')
 }
@@ -145,6 +166,7 @@ if (dateComparison >= 0 || timeComparison >= 0) {
 
 void venueFilter
 void bookingFilter
+void venueDraft
 void seedMeta
 void cell
 void firstSeedVenue
@@ -161,6 +183,7 @@ void isFutureBooking
 void dateComparison
 void timeComparison
 void assertVenueCanDelete
+void validVenueDraftValidation
 
 const seededVenueCount: number = seeded.seedMeta.venueCount
 const seededBookingCount: number = seeded.seedMeta.bookingCount

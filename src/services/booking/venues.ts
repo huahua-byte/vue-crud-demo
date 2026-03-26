@@ -1,4 +1,10 @@
-import { createDefaultVenueSearchFilter, type StoreActionResult, type Venue, type VenueSearchFilter } from '../../domain/booking'
+import {
+  createDefaultVenueSearchFilter,
+  type StoreActionResult,
+  type Venue,
+  type VenueDraft,
+  type VenueSearchFilter,
+} from '../../domain/booking'
 import { useBookingStore } from '../../stores/useBookingStore'
 
 export async function getVenues(
@@ -13,6 +19,18 @@ export async function getVenueById(venueId: string): Promise<StoreActionResult<V
   const store = useBookingStore()
 
   return store.getVenueById(venueId)
+}
+
+export async function createVenue(draft: VenueDraft): Promise<StoreActionResult<Venue>> {
+  const store = useBookingStore()
+
+  return store.createVenue(draft)
+}
+
+export async function updateVenue(venueId: string, draft: VenueDraft): Promise<StoreActionResult<Venue>> {
+  const store = useBookingStore()
+
+  return store.updateVenue(venueId, draft)
 }
 
 export async function deleteVenue(venueId: string): Promise<StoreActionResult<{ id: string }>> {

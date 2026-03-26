@@ -1,12 +1,12 @@
-import type { BookingFieldErrors, BookingValidationResult } from '../../domain/booking'
+import type { ValidationResult } from '../../domain/booking'
 
 export interface SharedValidationMessages {
-  fieldErrors: BookingFieldErrors
+  fieldErrors: Record<string, string | undefined>
   generalErrors: string[]
 }
 
-export function mapBookingValidationToMessages(
-  validation: BookingValidationResult | undefined,
+export function mapValidationToMessages(
+  validation: ValidationResult | undefined,
 ): SharedValidationMessages {
   if (validation === undefined) {
     return {
@@ -20,3 +20,5 @@ export function mapBookingValidationToMessages(
     generalErrors: [...validation.generalErrors],
   }
 }
+
+export const mapBookingValidationToMessages = mapValidationToMessages

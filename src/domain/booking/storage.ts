@@ -60,6 +60,7 @@ export function isVenueRecord(value: unknown): value is Venue {
     typeof value.name === 'string' &&
     typeof value.location === 'string' &&
     isNonNegativeInteger(value.capacity) &&
+    isNonNegativeInteger(value.hourlyPrice) &&
     isStringArray(value.amenities) &&
     isTimeString(value.openingTime) &&
     isTimeString(value.closingTime) &&
@@ -160,6 +161,7 @@ export function createSeedVenues(now: string = new Date().toISOString()): Venue[
       name: 'Main Hall',
       location: '1F East Wing',
       capacity: 120,
+      hourlyPrice: 300,
       amenities: ['projector', 'sound-system'],
       openingTime: '08:00',
       closingTime: '22:00',
@@ -173,6 +175,7 @@ export function createSeedVenues(now: string = new Date().toISOString()): Venue[
       name: 'Riverside Studio',
       location: '3F South Wing',
       capacity: 48,
+      hourlyPrice: 180,
       amenities: ['whiteboard', 'wifi'],
       openingTime: '09:00',
       closingTime: '20:00',
@@ -186,6 +189,7 @@ export function createSeedVenues(now: string = new Date().toISOString()): Venue[
       name: 'Boardroom A',
       location: '5F North Wing',
       capacity: 16,
+      hourlyPrice: 120,
       amenities: ['display', 'video-conference'],
       openingTime: '08:00',
       closingTime: '18:00',
