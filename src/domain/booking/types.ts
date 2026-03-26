@@ -32,6 +32,44 @@ export interface Booking {
   updatedAt: string
 }
 
+export interface BookingDraft {
+  venueId: string
+  title: string
+  contactName: string
+  contactPhone: string
+  date: string
+  startTime: string
+  endTime: string
+  attendeeCount: number
+  notes: string
+}
+
+export interface BookingTimeRange {
+  id?: string
+  venueId: string
+  date: string
+  startTime: string
+  endTime: string
+}
+
+export interface BookingFieldErrors {
+  venueId?: string
+  title?: string
+  contactName?: string
+  contactPhone?: string
+  date?: string
+  startTime?: string
+  endTime?: string
+  attendeeCount?: string
+  notes?: string
+}
+
+export interface BookingValidationResult {
+  isValid: boolean
+  fieldErrors: BookingFieldErrors
+  generalErrors: string[]
+}
+
 export interface WeeklyCalendarCell {
   date: string
   time: string

@@ -1,4 +1,5 @@
 export * from './constants'
 export * from './date'
+export * from './rules'
 export * from './storage'
 export * from './types'
