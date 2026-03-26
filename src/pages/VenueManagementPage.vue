@@ -4,6 +4,7 @@ import { onMounted, ref } from 'vue'
 import { createDefaultVenueSearchFilter, type Venue } from '../domain/booking'
 import { getVenues } from '../services/booking'
 
+const pageTitle = '场地管理'
 const venues = ref<Venue[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -31,11 +32,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="page-shell">
-    <header class="page-shell__header">
-      <div>
-        <p class="page-shell__eyebrow">场地管理</p>
-        <h2 class="page-shell__title">预约系统场地库</h2>
+  <section class="booking-page-shell page-shell">
+    <header class="booking-page-header page-shell__header">
+      <div class="booking-page-title">
+        <p class="page-shell__eyebrow">{{ pageTitle }}</p>
+        <h2 class="page-shell__title">{{ pageTitle }}</h2>
       </div>
       <p class="page-shell__description">
         当前已接入场地数据读取链路，后续可在这里扩展筛选、增删改与状态管理。

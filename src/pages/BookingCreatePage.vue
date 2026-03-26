@@ -4,6 +4,7 @@ import { reactive, ref } from 'vue'
 import type { BookingDraft } from '../domain/booking'
 import { createBooking } from '../services/booking'
 
+const pageTitle = '创建预约'
 const draft = reactive<BookingDraft>(createInitialDraft())
 const isSubmitting = ref(false)
 const statusMessage = ref('表单骨架已创建，后续可在这里挂接字段组件与校验提示。')
@@ -33,11 +34,11 @@ async function submitBooking(currentDraft: BookingDraft): Promise<void> {
 </script>
 
 <template>
-  <section class="page-shell">
-    <header class="page-shell__header">
-      <div>
-        <p class="page-shell__eyebrow">预约创建</p>
-        <h2 class="page-shell__title">新建预约入口</h2>
+  <section class="booking-page-shell page-shell">
+    <header class="booking-page-header page-shell__header">
+      <div class="booking-page-title">
+        <p class="page-shell__eyebrow">{{ pageTitle }}</p>
+        <h2 class="page-shell__title">{{ pageTitle }}</h2>
       </div>
       <p class="page-shell__description">
         这里保留了预约草稿结构和提交方法签名，后续表单开发可以直接填充字段绑定。

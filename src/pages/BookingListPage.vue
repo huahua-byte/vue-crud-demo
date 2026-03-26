@@ -4,6 +4,7 @@ import { onMounted, ref } from 'vue'
 import { createDefaultBookingFilter, type Booking } from '../domain/booking'
 import { getBookings } from '../services/booking'
 
+const pageTitle = '预约列表'
 const bookings = ref<Booking[]>([])
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -31,11 +32,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="page-shell">
-    <header class="page-shell__header">
-      <div>
-        <p class="page-shell__eyebrow">预约列表</p>
-        <h2 class="page-shell__title">全部预约概览</h2>
+  <section class="booking-page-shell page-shell">
+    <header class="booking-page-header page-shell__header">
+      <div class="booking-page-title">
+        <p class="page-shell__eyebrow">{{ pageTitle }}</p>
+        <h2 class="page-shell__title">{{ pageTitle }}</h2>
       </div>
       <p class="page-shell__description">
         当前页面已经打通预约列表查询，后续可叠加筛选器、批量操作和详情抽屉。
