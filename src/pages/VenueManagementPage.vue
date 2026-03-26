@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import {
   createDefaultVenueSearchFilter,
@@ -17,6 +17,7 @@ import {
   SharedPanel,
   mapValidationToMessages,
 } from '../components/shared'
+import { useBookingStore } from '../stores/useBookingStore'
 
 const pageTitle = '场地管理'
 const searchKeyword = ref('')
@@ -32,6 +33,7 @@ const successMessage = ref('')
 const venuePendingDeleteId = ref<string | null>(null)
 const isDeleting = ref(false)
 const { showError, showSuccess } = useToast()
+const store = useBookingStore()
 
 const statusMessage = computed(() => {
   if (isLoading.value) {
@@ -121,11 +123,10 @@ async function submitVenue(currentDraft: VenueDraft): Promise<void> {
       : await updateVenue(editingVenueId.value, currentDraft)
 
   if (result.ok) {
-    successMessage.value = editingVenueId.value === null ? '场地已新增。' : '场地信息已更新。'
+    const nextMessage = result.data?.name ? `场地“${result.data.name}”已保存。` : '场地信息已保存。'
     resetVenueForm()
-    successMessage.value = result.data?.name
-      ? `场地“${result.data.name}”已保存。`
-      : '场地信息已保存。'
+    successMessage.value = nextMessage
+    showSuccess(nextMessage)
     await loadVenues()
     isSubmitting.value = false
     return
@@ -138,6 +139,10 @@ async function submitVenue(currentDraft: VenueDraft): Promise<void> {
 
   if (validationMessages.generalErrors.length === 0 && result.message) {
     generalErrors.value = [result.message]
+  }
+
+  if (result.message) {
+    showError(result.message)
   }
 
   isSubmitting.value = false
@@ -177,7 +182,15 @@ async function confirmDeleteVenue(venueId: string): Promise<void> {
   await loadVenues()
 }
 
+watch(
+  () => store.venues.value,
+  async () => {
+    await loadVenues()
+  },
+)
+
 onMounted(async () => {
+  store.reloadFromStorage()
   await loadVenues()
 })
 </script>

@@ -2,7 +2,15 @@ import assert from 'node:assert/strict'
 import { beforeEach, describe, it } from 'node:test'
 
 import { useBookingStore } from './useBookingStore'
-import { STORAGE_KEYS, type AppSeedMeta, type Booking, type BookingDraft, type Venue, type VenueDraft } from '../domain/booking'
+import {
+  STORAGE_KEYS,
+  createDefaultBookingFilter,
+  type AppSeedMeta,
+  type Booking,
+  type BookingDraft,
+  type Venue,
+  type VenueDraft,
+} from '../domain/booking'
 import { getWeeklyCalendar } from '../services/booking'
 
 class MemoryStorage {
@@ -128,6 +136,20 @@ function resetStoreState(): void {
   store.initialized.value = true
 }
 
+function persistStoreSnapshot({
+  venues,
+  bookings,
+  seedMeta,
+}: {
+  venues: Venue[]
+  bookings: Booking[]
+  seedMeta: AppSeedMeta
+}): void {
+  localStorageStub.setItem(STORAGE_KEYS.venues, JSON.stringify(venues))
+  localStorageStub.setItem(STORAGE_KEYS.bookings, JSON.stringify(bookings))
+  localStorageStub.setItem(STORAGE_KEYS.seedMeta, JSON.stringify(seedMeta))
+}
+
 beforeEach(() => {
   localStorageStub.clear()
   resetStoreState()
@@ -226,6 +248,40 @@ describe('useBookingStore().cancelBooking()', () => {
       ),
       false,
     )
+  })
+})
+
+describe('useBookingStore() storage reload', () => {
+  it('restores venues and bookings from localStorage after transient state reset', () => {
+    const store = useBookingStore()
+    const persistedVenues = [createVenue(), createVenue({ id: 'venue-2', name: 'Riverside Studio' })]
+    const persistedBookings = [createBooking()]
+    const persistedSeedMeta: AppSeedMeta = {
+      version: '1.0.0',
+      seededAt: '2026-03-26T08:00:00.000Z',
+      venueCount: persistedVenues.length,
+      bookingCount: persistedBookings.length,
+    }
+
+    persistStoreSnapshot({
+      venues: persistedVenues,
+      bookings: persistedBookings,
+      seedMeta: persistedSeedMeta,
+    })
+
+    store.resetTransientState()
+
+    assert.equal(store.initialized.value, false)
+    assert.equal(store.venues.value.length, 0)
+    assert.equal(store.bookings.value.length, 0)
+
+    store.reloadFromStorage()
+
+    assert.equal(store.initialized.value, true)
+    assert.equal(store.venues.value.length, 2)
+    assert.equal(store.bookings.value.length, 1)
+    assert.equal(store.bookings.value[0]?.title, 'Morning Workshop')
+    assert.equal(store.seedMeta.value?.bookingCount, 1)
   })
 })
 
@@ -380,5 +436,55 @@ describe('getWeeklyCalendar()', () => {
     assert.equal(earlyCell?.isBusinessHour, false)
     assert.equal(firstOpenCell?.isBusinessHour, true)
     assert.equal(lateCell?.isBusinessHour, false)
+  })
+
+  it('reflects create and cancel flow consistently across booking list queries and calendar cells', async () => {
+    const store = useBookingStore()
+
+    const createResult = store.createBooking(
+      createBookingDraft({
+        date: '2026-03-30',
+        startTime: '09:00',
+        endTime: '11:00',
+      }),
+    )
+
+    assert.equal(createResult.ok, true)
+
+    const listResult = store.getBookings({
+      keyword: '',
+      venueId: 'venue-1',
+      statuses: [],
+      dateFrom: '2026-03-30',
+      dateTo: '2026-03-30',
+    })
+    const createdBookingId = createResult.data?.id ?? ''
+    const occupiedCalendar = await getWeeklyCalendar({
+      date: '2026-03-30',
+      venueId: 'venue-1',
+    })
+
+    assert.equal(listResult.ok, true)
+    assert.equal(listResult.data?.some((booking) => booking.id === createdBookingId), true)
+    assert.deepEqual(
+      occupiedCalendar.data?.cells
+        .filter((cell) => cell.bookingId === createdBookingId)
+        .map((cell) => `${cell.date} ${cell.time}`),
+      ['2026-03-30 09:00', '2026-03-30 10:00'],
+    )
+
+    const cancelResult = store.cancelBooking(createdBookingId)
+    const releasedCalendar = await getWeeklyCalendar({
+      date: '2026-03-30',
+      venueId: 'venue-1',
+    })
+
+    assert.equal(cancelResult.ok, true)
+    assert.equal(cancelResult.data?.status, 'cancelled')
+    assert.equal(store.getBookings(createDefaultBookingFilter()).data?.[0]?.status, 'cancelled')
+    assert.equal(
+      releasedCalendar.data?.cells.some((cell) => cell.date === '2026-03-30' && cell.bookingId === createdBookingId),
+      false,
+    )
   })
 })
