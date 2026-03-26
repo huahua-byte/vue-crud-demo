@@ -271,4 +271,20 @@ onMounted(async () => {
     justify-content: center;
   }
 }
+
+[data-theme="dark"] .booking-list-page__status {
+  background: rgba(95, 160, 230, 0.14);
+  color: var(--color-primary);
+}
+
+[data-theme="dark"] .booking-list-page__status--cancelled {
+  background: rgba(233, 112, 100, 0.12);
+  color: var(--color-danger);
+}
+
+[data-theme="dark"] .shared-button--secondary {
+  color: var(--color-text);
+  background: rgba(26, 29, 35, 0.96);
+  border-color: var(--color-border);
+}
 </style>
