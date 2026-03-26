@@ -145,8 +145,17 @@ export function createWeeklyCalendarCell(params: {
   time: string
   venueId: string
   bookingId?: string | null
+  openingTime?: string
+  closingTime?: string
 }): WeeklyCalendarCell {
-  const { date, time, venueId, bookingId = null } = params
+  const {
+    date,
+    time,
+    venueId,
+    bookingId = null,
+    openingTime = BUSINESS_HOUR_START,
+    closingTime = BUSINESS_HOUR_END,
+  } = params
 
   assertIsoDateString(date)
 
@@ -154,13 +163,14 @@ export function createWeeklyCalendarCell(params: {
     throw new Error(`Invalid time slot: "${time}". Expected a business hour slot between ${BUSINESS_HOUR_START} and ${BUSINESS_HOUR_END}.`)
   }
 
-  const businessHourSlots = getBusinessHourSlots()
+  assertTimeLabel(openingTime)
+  assertTimeLabel(closingTime)
 
   return {
     date,
     time,
     venueId,
     bookingId,
-    isBusinessHour: businessHourSlots.includes(time),
+    isBusinessHour: compareTimeSlotLabels(time, openingTime) >= 0 && compareTimeSlotLabels(time, closingTime) < 0,
   }
 }
