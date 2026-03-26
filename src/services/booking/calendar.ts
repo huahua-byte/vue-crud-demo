@@ -21,7 +21,7 @@ function addDays(date: string, days: number): string {
 
 function findBookingId(bookings: Booking[], date: string, time: string, venueId: string): string | null {
   const booking = bookings.find((entry) => {
-    if (entry.date !== date || entry.venueId !== venueId) {
+    if (entry.status === 'cancelled' || entry.date !== date || entry.venueId !== venueId) {
       return false
     }
 

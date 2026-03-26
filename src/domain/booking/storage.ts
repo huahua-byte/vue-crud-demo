@@ -77,6 +77,7 @@ export function isBookingRecord(value: unknown): value is Booking {
     isRecord(value) &&
     typeof value.id === 'string' &&
     typeof value.venueId === 'string' &&
+    typeof value.venueNameSnapshot === 'string' &&
     typeof value.title === 'string' &&
     typeof value.contactName === 'string' &&
     typeof value.contactPhone === 'string' &&
@@ -91,6 +92,29 @@ export function isBookingRecord(value: unknown): value is Booking {
     isIsoTimestampString(value.createdAt) &&
     isIsoTimestampString(value.updatedAt)
   )
+}
+
+function normalizeBookingRecord(value: unknown): Booking | null {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const legacyVenueNameSnapshot = typeof value.venueNameSnapshot === 'string'
+    ? value.venueNameSnapshot
+    : typeof value.venueId === 'string'
+      ? value.venueId
+      : null
+
+  if (legacyVenueNameSnapshot === null) {
+    return null
+  }
+
+  const normalizedValue = {
+    ...value,
+    venueNameSnapshot: legacyVenueNameSnapshot,
+  }
+
+  return isBookingRecord(normalizedValue) ? normalizedValue : null
 }
 
 export function isSeedMetaRecord(value: unknown): value is AppSeedMeta {
@@ -120,11 +144,17 @@ export function saveVenues(venues: Venue[]): void {
 export function loadBookings(): Booking[] {
   const value = parseStorageItem(STORAGE_KEYS.bookings)
 
-  if (!Array.isArray(value) || !value.every(isBookingRecord)) {
+  if (!Array.isArray(value)) {
     return []
   }
 
-  return value
+  const normalizedBookings = value.map((entry) => normalizeBookingRecord(entry))
+
+  if (normalizedBookings.some((entry) => entry === null)) {
+    return []
+  }
+
+  return normalizedBookings as Booking[]
 }
 
 export function saveBookings(bookings: Booking[]): void {
@@ -207,6 +237,7 @@ export function ensureBookingStorageSeeded(version: string = APP_SEED_VERSION): 
   seedMeta: AppSeedMeta
 } {
   const venues = loadVenues()
+  const rawBookings = parseStorageItem(STORAGE_KEYS.bookings)
   const bookings = loadBookings()
   const currentSeedMeta = loadSeedMeta()
 
@@ -214,6 +245,10 @@ export function ensureBookingStorageSeeded(version: string = APP_SEED_VERSION): 
   const nextVenues = shouldSeedVenues ? createSeedVenues() : venues
   const nextBookings = bookings
   const shouldWriteBookings = parseStorageItem(STORAGE_KEYS.bookings) === null
+  const needsBookingMigration =
+    Array.isArray(rawBookings) &&
+    rawBookings.length === nextBookings.length &&
+    rawBookings.some((entry) => isRecord(entry) && typeof entry.venueNameSnapshot !== 'string')
   const needsSeedMeta =
     currentSeedMeta === null ||
     currentSeedMeta.version !== version ||
@@ -225,6 +260,10 @@ export function ensureBookingStorageSeeded(version: string = APP_SEED_VERSION): 
   }
 
   if (shouldWriteBookings) {
+    saveBookings(nextBookings)
+  }
+
+  if (needsBookingMigration) {
     saveBookings(nextBookings)
   }
 

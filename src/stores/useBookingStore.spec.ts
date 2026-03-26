@@ -94,6 +94,7 @@ function createBooking(overrides: Partial<Booking> = {}): Booking {
   return {
     id: 'booking-1',
     venueId: draft.venueId,
+    venueNameSnapshot: 'Main Hall',
     title: draft.title,
     contactName: draft.contactName,
     contactPhone: draft.contactPhone,
@@ -148,11 +149,13 @@ describe('useBookingStore().createBooking()', () => {
     assert.equal(store.bookings.value[0]?.date, '2026-03-30')
     assert.equal(store.bookings.value[0]?.startTime, '10:00')
     assert.equal(store.bookings.value[0]?.endTime, '12:00')
+    assert.equal(store.bookings.value[0]?.venueNameSnapshot, 'Main Hall')
 
     const savedBookings = JSON.parse(localStorageStub.getItem(STORAGE_KEYS.bookings) ?? '[]') as Booking[]
     assert.equal(savedBookings[0]?.date, '2026-03-30')
     assert.equal(savedBookings[0]?.startTime, '10:00')
     assert.equal(savedBookings[0]?.endTime, '12:00')
+    assert.equal(savedBookings[0]?.venueNameSnapshot, 'Main Hall')
   })
 
   it('returns a clear conflict validation when an overlapping booking already exists', () => {
@@ -195,6 +198,34 @@ describe('useBookingStore().createBooking()', () => {
     assert.equal(lateResult.ok, false)
     assert.equal(lateResult.validation?.fieldErrors.endTime, '所选场地营业时间为 09:00-20:00。 请选择营业时间内的结束时间。')
     assert.equal(store.bookings.value.length, 0)
+  })
+})
+
+describe('useBookingStore().cancelBooking()', () => {
+  it('marks a booking as cancelled, persists it, and releases calendar occupancy', async () => {
+    const store = useBookingStore()
+    store.bookings.value = [createBooking()]
+
+    const result = store.cancelBooking('booking-1')
+
+    assert.equal(result.ok, true)
+    assert.equal(result.data?.status, 'cancelled')
+    assert.equal(store.bookings.value[0]?.status, 'cancelled')
+    assert.equal(store.bookings.value[0]?.venueNameSnapshot, 'Main Hall')
+
+    const savedBookings = JSON.parse(localStorageStub.getItem(STORAGE_KEYS.bookings) ?? '[]') as Booking[]
+    assert.equal(savedBookings[0]?.status, 'cancelled')
+    assert.equal(savedBookings[0]?.venueNameSnapshot, 'Main Hall')
+
+    const calendarResult = await getWeeklyCalendar({ date: '2026-03-30', venueId: 'venue-1' })
+
+    assert.equal(calendarResult.ok, true)
+    assert.equal(
+      calendarResult.data?.cells.some(
+        (cell) => cell.date === '2026-03-30' && (cell.time === '09:00' || cell.time === '10:00') && cell.bookingId !== null,
+      ),
+      false,
+    )
   })
 })
 

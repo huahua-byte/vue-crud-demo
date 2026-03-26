@@ -20,6 +20,7 @@ export interface Venue {
 export interface Booking {
   id: string
   venueId: string
+  venueNameSnapshot: string
   title: string
   contactName: string
   contactPhone: string

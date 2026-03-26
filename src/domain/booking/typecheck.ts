@@ -67,6 +67,7 @@ const venueDraft: VenueDraft = {
 const booking: Booking = {
   id: 'booking-1',
   venueId: venue.id,
+  venueNameSnapshot: venue.name,
   title: 'Team Workshop',
   contactName: 'Alex Chen',
   contactPhone: '13800000000',
