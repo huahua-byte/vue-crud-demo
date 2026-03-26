@@ -10,6 +10,7 @@ export const DEFAULT_WEEK_VIEW_RANGE = {
 export const DATE_FORMAT = 'YYYY-MM-DD'
 export const TIME_FORMAT = 'HH:mm'
 export const DATE_TIME_FORMAT = `${DATE_FORMAT} ${TIME_FORMAT}`
+export const APP_SEED_VERSION = '1.0.0'
 
 export const VENUE_STATUSES = ['active', 'inactive', 'maintenance'] as const satisfies readonly VenueStatus[]
 export const BOOKING_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed'] as const satisfies readonly BookingStatus[]
