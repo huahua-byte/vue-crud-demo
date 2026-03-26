@@ -9,6 +9,7 @@ import {
 } from '../domain/booking'
 import { getWeeklyCalendar } from '../services/booking'
 
+const pageTitle = '预约周历'
 const today = new Date().toISOString().slice(0, 10)
 const calendar = ref<WeeklyCalendarResult | null>(null)
 const isLoading = ref(false)
@@ -39,11 +40,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="page-shell">
-    <header class="page-shell__header">
-      <div>
-        <p class="page-shell__eyebrow">预约周历</p>
-        <h2 class="page-shell__title">周视图骨架</h2>
+  <section class="booking-page-shell page-shell">
+    <header class="booking-page-header page-shell__header">
+      <div class="booking-page-title">
+        <p class="page-shell__eyebrow">{{ pageTitle }}</p>
+        <h2 class="page-shell__title">{{ pageTitle }}</h2>
       </div>
       <p class="page-shell__description">
         默认按 {{ DEFAULT_WEEK_VIEW_DAYS }} 天窗口读取周历数据，后续可在此扩展时间轴、场地切换与冲突态展示。
