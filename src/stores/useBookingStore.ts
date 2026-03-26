@@ -10,6 +10,7 @@ import {
   saveSeedMeta,
   saveVenues,
   validateBookingDraft,
+  validateVenueBusinessHourBooking,
   validateVenueDraft,
   type AppSeedMeta,
   type Booking,
@@ -299,6 +300,21 @@ function createBooking(draft: BookingDraft): StoreActionResult<Booking> {
       ok: false,
       message: getValidationMessage(venueValidation),
       validation: venueValidation,
+    }
+  }
+
+  const venueTimeValidation = validateVenueBusinessHourBooking(
+    draft.startTime,
+    draft.endTime,
+    venue.openingTime,
+    venue.closingTime,
+  )
+
+  if (!venueTimeValidation.isValid) {
+    return {
+      ok: false,
+      message: getValidationMessage(venueTimeValidation),
+      validation: venueTimeValidation,
     }
   }
 

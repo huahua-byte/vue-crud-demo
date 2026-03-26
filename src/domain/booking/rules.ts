@@ -127,6 +127,30 @@ export function isValidContinuousBooking(startTime: string, endTime: string): bo
   return expandTimeRange(startTime, endTime).length > 0
 }
 
+export function validateVenueBusinessHourBooking(
+  startTime: string,
+  endTime: string,
+  openingTime: string,
+  closingTime: string,
+): BookingValidationResult {
+  if (!isValidBusinessHourBooking(startTime, endTime) || !isValidContinuousBooking(startTime, endTime)) {
+    return createValidationResult()
+  }
+
+  const fieldErrors: BookingFieldErrors = {}
+  const venueHourMessage = `所选场地营业时间为 ${openingTime}-${closingTime}。`
+
+  if (compareTimeSlotLabels(startTime, openingTime) < 0) {
+    fieldErrors.startTime = `${venueHourMessage} 请选择营业时间内的开始时间。`
+  }
+
+  if (compareTimeSlotLabels(endTime, closingTime) > 0) {
+    fieldErrors.endTime = `${venueHourMessage} 请选择营业时间内的结束时间。`
+  }
+
+  return createValidationResult(fieldErrors)
+}
+
 export function validateBookingDraft(draft: BookingDraft): BookingValidationResult {
   const requiredValidation = validateRequiredBookingFields(draft)
 
