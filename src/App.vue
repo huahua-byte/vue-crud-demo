@@ -1,166 +1,212 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
-import AppToast from './components/AppToast.vue'
-import TodoForm from './components/TodoForm.vue'
-import TodoList from './components/TodoList.vue'
-import { useToast } from './composables/useToast'
-import { useTodoStore } from './stores/useTodoStore'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 
-const { todos, editingId, addTodo, updateTodo, deleteTodo, startEditing, resetEditing } = useTodoStore()
-const { toasts, showSuccess, showError, removeToast } = useToast()
+const route = useRoute()
 
-const currentTodo = computed(() => {
-  return todos.value.find((todo) => todo.id === editingId.value) ?? null
+const navigationItems = [
+  {
+    label: '场地管理',
+    to: '/venues',
+    description: '维护场地基础信息与可用状态',
+  },
+  {
+    label: '新建预约',
+    to: '/bookings/new',
+    description: '创建新的预约草稿与提交入口',
+  },
+  {
+    label: '预约周历',
+    to: '/calendar',
+    description: '查看一周内的场地预约排布',
+  },
+  {
+    label: '预约列表',
+    to: '/bookings',
+    description: '浏览全部预约记录与后续筛选结果',
+  },
+] as const
+
+const currentPage = computed(() => {
+  return navigationItems.find((item) => isRouteActive(item.to)) ?? navigationItems[0]
 })
 
-const isEditing = computed(() => editingId.value !== null)
-
-const formValues = computed(() => {
-  return currentTodo.value
-    ? {
-        title: currentTodo.value.title,
-        description: currentTodo.value.description,
-      }
-    : {
-        title: '',
-        description: '',
-      }
-})
-
-function handleSubmitTodo(payload) {
-  if (!payload.title.trim()) {
-    showError('Title is required.')
-    return
-  }
-
-  if (isEditing.value) {
-    const updated = updateTodo(editingId.value, payload)
-
-    if (!updated) {
-      showError('Unable to update that todo.')
-      return
-    }
-
-    resetEditing()
-    showSuccess('Todo updated.')
-    return
-  }
-
-  const added = addTodo(payload)
-
-  if (!added) {
-    showError('Unable to add that todo.')
-    return
-  }
-
-  showSuccess('Todo added.')
-}
-
-function handleEditTodo(todo) {
-  startEditing(todo.id)
-}
-
-function handleDeleteTodo(id) {
-  const deleted = deleteTodo(id)
-
-  if (!deleted) {
-    showError('Unable to delete that todo.')
-    return
-  }
-
-  showSuccess('Todo deleted.')
-}
-
-function handleCancelEdit() {
-  resetEditing()
+function isRouteActive(targetPath: string): boolean {
+  return route.path === targetPath
 }
 </script>
 
 <template>
-  <div id="app">
-    <header class="app-shell__header">
-      <p class="app-shell__eyebrow">Vue 3 CRUD Demo</p>
-      <h1 class="app-shell__title">Keep your tasks clear, current, and local.</h1>
-      <p class="app-shell__subtitle">
-        Create, edit, and remove todos with local persistence and lightweight notifications.
-      </p>
+  <div class="app-shell">
+    <header class="app-shell__hero">
+      <div class="app-shell__hero-main">
+        <p class="app-shell__eyebrow">Booking Workspace</p>
+        <h1 class="app-shell__title">预约系统应用壳</h1>
+        <p class="app-shell__subtitle">
+          顶层导航、默认入口与页面出口已统一到 Vue Router，后续业务页面可以在同一骨架中持续扩展。
+        </p>
+      </div>
+
+      <div class="app-shell__hero-side">
+        <p class="app-shell__hero-label">当前页面</p>
+        <p class="app-shell__hero-value">{{ currentPage.label }}</p>
+        <p class="app-shell__hero-description">{{ currentPage.description }}</p>
+      </div>
     </header>
 
-    <main class="app-shell__content">
-      <TodoForm
-        :initial-values="formValues"
-        :is-editing="isEditing"
-        @submit-todo="handleSubmitTodo"
-        @cancel-edit="handleCancelEdit"
-      />
-      <TodoList :todos="todos" @edit-todo="handleEditTodo" @delete-todo="handleDeleteTodo" />
-    </main>
+    <nav class="app-shell__nav" aria-label="核心导航">
+      <RouterLink
+        v-for="item in navigationItems"
+        :key="item.to"
+        :to="item.to"
+        class="app-shell__nav-link"
+        :class="{ 'app-shell__nav-link--active': isRouteActive(item.to) }"
+      >
+        <span class="app-shell__nav-label">{{ item.label }}</span>
+        <span class="app-shell__nav-description">{{ item.description }}</span>
+      </RouterLink>
+    </nav>
 
-    <AppToast :toasts="toasts" @dismiss-toast="removeToast" />
+    <main class="app-shell__content">
+      <RouterView />
+    </main>
   </div>
 </template>
 
 <style scoped>
-#app {
-  width: min(960px, calc(100vw - 2rem));
-  margin: 0 auto;
-  padding: 4rem 0 3rem;
+.app-shell {
+  display: grid;
+  gap: var(--spacing-lg);
+  min-width: 0;
 }
 
-#app::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
+.app-shell__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: var(--spacing-lg);
+  padding: clamp(1.25rem, 2vw, 2rem);
   background:
-    radial-gradient(circle at top left, rgba(74, 144, 217, 0.2), transparent 34%),
-    radial-gradient(circle at bottom right, rgba(39, 174, 96, 0.14), transparent 28%);
+    linear-gradient(140deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.84)),
+    radial-gradient(circle at top left, rgba(74, 144, 217, 0.16), transparent 38%);
+  border: 1px solid rgba(220, 223, 230, 0.9);
+  border-radius: calc(var(--radius) * 2);
+  box-shadow: 0 22px 45px rgba(44, 62, 80, 0.08);
 }
 
-.app-shell__header {
-  margin-bottom: 2rem;
-  padding: 2rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.78));
-  border: 1px solid rgba(220, 223, 230, 0.9);
-  border-radius: calc(var(--radius) * 1.5);
-  box-shadow: 0 22px 45px rgba(44, 62, 80, 0.08);
+.app-shell__hero-main,
+.app-shell__hero-side {
+  min-width: 0;
 }
 
 .app-shell__eyebrow {
   margin-bottom: var(--spacing-sm);
   color: var(--color-primary);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .app-shell__title {
-  max-width: 12ch;
-  font-size: clamp(2.4rem, 5vw, 4.2rem);
-  line-height: 0.95;
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 0.94;
 }
 
 .app-shell__subtitle {
-  max-width: 42rem;
+  max-width: 40rem;
   margin-top: var(--spacing-md);
   color: var(--color-text-muted);
-  font-size: 1.05rem;
+  font-size: 1.02rem;
+}
+
+.app-shell__hero-side {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  padding: 1.25rem;
+  background: rgba(245, 247, 250, 0.9);
+  border: 1px solid rgba(220, 223, 230, 0.95);
+  border-radius: calc(var(--radius) * 1.5);
+}
+
+.app-shell__hero-label {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.app-shell__hero-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.app-shell__hero-description {
+  color: var(--color-text-muted);
+}
+
+.app-shell__nav {
+  display: flex;
+  gap: var(--spacing-md);
+  min-width: 0;
+  padding-bottom: 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.app-shell__nav-link {
+  flex: 0 0 240px;
+  min-width: 0;
+  padding: 1rem 1.1rem;
+  color: inherit;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) * 1.5);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.app-shell__nav-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(74, 144, 217, 0.5);
+  box-shadow: 0 14px 24px rgba(44, 62, 80, 0.08);
+}
+
+.app-shell__nav-link--active {
+  border-color: rgba(74, 144, 217, 0.85);
+  background: linear-gradient(180deg, rgba(74, 144, 217, 0.14), rgba(255, 255, 255, 0.96));
+  box-shadow: 0 16px 28px rgba(74, 144, 217, 0.14);
+}
+
+.app-shell__nav-label,
+.app-shell__nav-description {
+  display: block;
+}
+
+.app-shell__nav-label {
+  font-weight: 700;
+}
+
+.app-shell__nav-description {
+  margin-top: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
 }
 
 .app-shell__content {
-  display: grid;
-  gap: var(--spacing-lg);
+  min-width: 0;
 }
 
 @media (max-width: 640px) {
-  #app {
-    width: min(100vw - 1rem, 960px);
-    padding-top: 1rem;
+  .app-shell__hero {
+    grid-template-columns: 1fr;
   }
 
-  .app-shell__header {
-    padding: var(--spacing-lg);
+  .app-shell__nav-link {
+    flex-basis: min(85vw, 280px);
   }
 }
 </style>
