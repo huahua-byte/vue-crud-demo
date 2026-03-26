@@ -44,6 +44,17 @@ export interface BookingDraft {
   notes: string
 }
 
+export interface VenueDraft {
+  name: string
+  location: string
+  capacity: number
+  amenities: string[]
+  openingTime: string
+  closingTime: string
+  status: VenueStatus
+  description: string
+}
+
 export interface BookingTimeRange {
   id?: string
   venueId: string
@@ -68,6 +79,13 @@ export interface BookingValidationResult {
   isValid: boolean
   fieldErrors: BookingFieldErrors
   generalErrors: string[]
+}
+
+export interface StoreActionResult<T> {
+  ok: boolean
+  data?: T
+  message?: string
+  validation?: BookingValidationResult
 }
 
 export interface WeeklyCalendarCell {
