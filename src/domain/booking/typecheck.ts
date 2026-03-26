@@ -135,36 +135,12 @@ if (invalidDraftValidation.isValid) {
   throw new Error('Expected invalid business-hour booking draft validation result.')
 }
 
-if (conflict?.id !== booking.id) {
-  throw new Error('Expected overlapping booking ranges to be detected as conflicts.')
-}
-
-if (!futureVenueBookings || !isFutureBooking) {
-  throw new Error('Expected future venue bookings to be detected from the booking start time.')
-}
-
 if (weekStart !== '2026-03-30') {
   throw new Error('Expected getStartOfWeek() to return the Monday of the booking week.')
 }
 
-if (expandedTimeRange.join(',') !== '09:00,10:00,11:00') {
-  throw new Error('Expected expandTimeRange() to return each continuous occupied hour slot.')
-}
-
 if (dateComparison >= 0 || timeComparison >= 0) {
   throw new Error('Expected date and time comparisons to preserve ascending order.')
-}
-
-let deletionBlocked = false
-
-try {
-  assertVenueCanDelete([booking], booking.venueId, '2026-03-26T08:00:00.000Z')
-} catch {
-  deletionBlocked = true
-}
-
-if (!deletionBlocked) {
-  throw new Error('Expected assertVenueCanDelete() to block venues with future bookings.')
 }
 
 void venueFilter
@@ -177,12 +153,14 @@ void bookings
 void loadedSeedMeta
 void seeded
 void STORAGE_KEYS
+void conflict
 void futureVenueBookings
 void weekStart
 void expandedTimeRange
 void isFutureBooking
 void dateComparison
 void timeComparison
+void assertVenueCanDelete
 
 const seededVenueCount: number = seeded.seedMeta.venueCount
 const seededBookingCount: number = seeded.seedMeta.bookingCount

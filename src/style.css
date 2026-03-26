@@ -21,9 +21,129 @@
   box-sizing: border-box;
 }
 
+html {
+  min-width: 320px;
+  background-color: var(--color-bg);
+}
+
 body {
+  min-width: 320px;
+  min-height: 100vh;
   font-family: Inter, system-ui, -apple-system, sans-serif;
   background-color: var(--color-bg);
   color: var(--color-text);
   line-height: 1.6;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+#app {
+  width: min(100%, 1200px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+#app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at top left, rgba(74, 144, 217, 0.2), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(39, 174, 96, 0.14), transparent 28%);
+}
+
+.page-shell {
+  display: grid;
+  gap: var(--spacing-lg);
+  min-width: 0;
+}
+
+.page-shell__header,
+.page-shell__panel {
+  min-width: 0;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(220, 223, 230, 0.92);
+  border-radius: calc(var(--radius) * 1.5);
+  box-shadow: 0 16px 32px rgba(44, 62, 80, 0.06);
+}
+
+.page-shell__header {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.page-shell__eyebrow {
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page-shell__title {
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  line-height: 1.1;
+}
+
+.page-shell__description,
+.page-shell__feedback {
+  color: var(--color-text-muted);
+}
+
+.page-shell__panel {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.page-shell__metric {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.page-shell__feedback--error {
+  color: var(--color-danger);
+}
+
+.page-shell__stack {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.page-shell__action {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  cursor: pointer;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius);
+}
+
+.page-shell__action:hover:enabled {
+  background: var(--color-primary-hover);
+}
+
+.page-shell__action:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+@media (max-width: 640px) {
+  #app {
+    width: 100%;
+    padding: 0.75rem;
+  }
 }

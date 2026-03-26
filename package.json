@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "sh -c 'if [ -x node_modules/.bin/vue-tsc ]; then node_modules/.bin/vue-tsc --noEmit; else echo \"Skipping vue-tsc during build because node_modules/.bin/vue-tsc is not installed.\"; fi' && vite build",
+    "test": "vite build --config vite.test.config.js && node --test .test-dist/run-booking-tests.mjs",
     "typecheck": "sh -c 'if [ -x node_modules/.bin/vue-tsc ]; then exec node_modules/.bin/vue-tsc --noEmit; else echo \"vue-tsc is not installed. Run npm install to restore devDependencies.\" >&2; exit 127; fi'",
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.5.30"
+    "vue": "^3.5.30",
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.5",
