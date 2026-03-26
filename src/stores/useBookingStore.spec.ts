@@ -129,6 +129,28 @@ beforeEach(() => {
 })
 
 describe('useBookingStore().createBooking()', () => {
+  it('creates a booking and persists it to localStorage immediately', () => {
+    const store = useBookingStore()
+
+    const result = store.createBooking(
+      createBookingDraft({
+        date: '2026-03-30',
+        startTime: '10:00',
+        endTime: '12:00',
+      }),
+    )
+
+    assert.equal(result.ok, true)
+    assert.equal(store.bookings.value[0]?.date, '2026-03-30')
+    assert.equal(store.bookings.value[0]?.startTime, '10:00')
+    assert.equal(store.bookings.value[0]?.endTime, '12:00')
+
+    const savedBookings = JSON.parse(localStorageStub.getItem(STORAGE_KEYS.bookings) ?? '[]') as Booking[]
+    assert.equal(savedBookings[0]?.date, '2026-03-30')
+    assert.equal(savedBookings[0]?.startTime, '10:00')
+    assert.equal(savedBookings[0]?.endTime, '12:00')
+  })
+
   it('returns a clear conflict validation when an overlapping booking already exists', () => {
     const store = useBookingStore()
     store.bookings.value = [createBooking()]
@@ -141,7 +163,34 @@ describe('useBookingStore().createBooking()', () => {
     )
 
     assert.equal(result.ok, false)
-    assert.match(result.validation?.generalErrors[0] ?? '', /预约时间冲突/)
+    assert.equal(
+      result.validation?.generalErrors[0],
+      '预约时间冲突：2026-03-30 09:00-11:00 已存在预约《Morning Workshop》。',
+    )
+  })
+
+  it('rejects bookings outside the selected venue business hours', () => {
+    const store = useBookingStore()
+    store.venues.value = [createVenue({ openingTime: '09:00', closingTime: '20:00' })]
+
+    const earlyResult = store.createBooking(
+      createBookingDraft({
+        startTime: '08:00',
+        endTime: '10:00',
+      }),
+    )
+    const lateResult = store.createBooking(
+      createBookingDraft({
+        startTime: '19:00',
+        endTime: '21:00',
+      }),
+    )
+
+    assert.equal(earlyResult.ok, false)
+    assert.equal(earlyResult.validation?.fieldErrors.startTime, '所选场地营业时间为 09:00-20:00。 请选择营业时间内的开始时间。')
+    assert.equal(lateResult.ok, false)
+    assert.equal(lateResult.validation?.fieldErrors.endTime, '所选场地营业时间为 09:00-20:00。 请选择营业时间内的结束时间。')
+    assert.equal(store.bookings.value.length, 0)
   })
 })
 

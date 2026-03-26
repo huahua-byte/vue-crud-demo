@@ -6,6 +6,7 @@ import {
   findBookingConflict,
   hasFutureVenueBookings,
   validateBookingDraft,
+  validateVenueBusinessHourBooking,
   validateVenueDraft,
 } from './rules'
 import type { Booking, BookingDraft, VenueDraft } from './types'
@@ -60,6 +61,13 @@ function createVenueDraft(overrides: Partial<VenueDraft> = {}): VenueDraft {
 }
 
 describe('validateBookingDraft()', () => {
+  it('accepts a continuous multi-hour full-hour booking within business hours', () => {
+    const validation = validateBookingDraft(createDraft({ startTime: '08:00', endTime: '10:00' }))
+
+    assert.equal(validation.isValid, true)
+    assert.deepEqual(validation.fieldErrors, {})
+  })
+
   it('rejects booking slots outside business hours', () => {
     const validation = validateBookingDraft(createDraft({ startTime: '07:00', endTime: '09:00' }))
 
@@ -80,6 +88,31 @@ describe('validateBookingDraft()', () => {
 
     assert.equal(validation.isValid, false)
     assert.equal(validation.fieldErrors.endTime, '预约时间必须为连续且结束时间晚于开始时间的整点时段。')
+  })
+
+  it('allows the final valid slot and rejects closing after business hours', () => {
+    const validValidation = validateBookingDraft(createDraft({ startTime: '21:00', endTime: '22:00' }))
+    const invalidValidation = validateBookingDraft(createDraft({ startTime: '21:00', endTime: '23:00' }))
+
+    assert.equal(validValidation.isValid, true)
+    assert.equal(invalidValidation.isValid, false)
+    assert.equal(invalidValidation.fieldErrors.startTime, '预约时间仅支持 08:00-22:00 的整点时段。')
+  })
+})
+
+describe('validateVenueBusinessHourBooking()', () => {
+  it('rejects bookings that start before the venue opens', () => {
+    const validation = validateVenueBusinessHourBooking('08:00', '10:00', '09:00', '20:00')
+
+    assert.equal(validation.isValid, false)
+    assert.equal(validation.fieldErrors.startTime, '所选场地营业时间为 09:00-20:00。 请选择营业时间内的开始时间。')
+  })
+
+  it('rejects bookings that end after the venue closes', () => {
+    const validation = validateVenueBusinessHourBooking('19:00', '21:00', '09:00', '20:00')
+
+    assert.equal(validation.isValid, false)
+    assert.equal(validation.fieldErrors.endTime, '所选场地营业时间为 09:00-20:00。 请选择营业时间内的结束时间。')
   })
 })
 

@@ -1,7 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 
-import { getBusinessHourSlots, type BookingDraft, type BookingFieldErrors, type Venue } from '../domain/booking'
+import {
+  BUSINESS_HOUR_END,
+  BUSINESS_HOUR_START,
+  compareTimeSlotLabels,
+  expandTimeRange,
+  getBusinessHourSlots,
+  type BookingDraft,
+  type BookingFieldErrors,
+  type Venue,
+} from '../domain/booking'
 import { createBooking, getVenues } from '../services/booking'
 import { SharedFeedbackMessage, SharedFormField, SharedPanel, mapBookingValidationToMessages } from '../components/shared'
 
@@ -14,6 +23,7 @@ const fieldErrors = ref<BookingFieldErrors>({})
 const generalErrors = ref<string[]>([])
 const successMessage = ref('')
 const loadErrorMessage = ref('')
+const durationHours = ref<number | null>(null)
 const statusMessage = computed(() => {
   if (isLoadingVenues.value) {
     return '正在加载场地选项...'
@@ -27,6 +37,51 @@ const statusMessage = computed(() => {
 })
 
 const businessHourSlots = getBusinessHourSlots()
+const selectableEndSlots = [...businessHourSlots, BUSINESS_HOUR_END]
+const selectedVenue = computed<Venue | null>(() => venues.value.find((venue) => venue.id === draft.venueId) ?? null)
+const venueHoursMessage = computed(() => {
+  if (selectedVenue.value === null) {
+    return `请选择场地后，在 ${BUSINESS_HOUR_START}-${BUSINESS_HOUR_END} 范围内选择整点时段。`
+  }
+
+  return `当前场地营业时间：${selectedVenue.value.openingTime}-${selectedVenue.value.closingTime}，仅支持整点连续预约。`
+})
+const availableStartSlots = computed<readonly string[]>(() => {
+  if (selectedVenue.value === null) {
+    return []
+  }
+
+  return businessHourSlots.filter(
+    (slot) =>
+      compareTimeSlotLabels(slot, selectedVenue.value!.openingTime) >= 0 &&
+      compareTimeSlotLabels(slot, selectedVenue.value!.closingTime) < 0,
+  )
+})
+const availableEndSlots = computed<string[]>(() => {
+  if (selectedVenue.value === null || draft.startTime === '') {
+    return []
+  }
+
+  return selectableEndSlots.filter(
+    (slot) =>
+      compareTimeSlotLabels(slot, draft.startTime) > 0 && compareTimeSlotLabels(slot, selectedVenue.value!.closingTime) <= 0,
+  )
+})
+const durationOptions = computed<number[]>(() => {
+  if (selectedVenue.value === null || draft.startTime === '') {
+    return []
+  }
+
+  return availableEndSlots.value.map((_, index) => index + 1)
+})
+const durationHoursInput = computed({
+  get(): string {
+    return durationHours.value === null ? '' : String(durationHours.value)
+  },
+  set(value: string) {
+    durationHours.value = value === '' ? null : Number.parseInt(value, 10)
+  },
+})
 
 function createInitialDraft(): BookingDraft {
   return {
@@ -42,6 +97,32 @@ function createInitialDraft(): BookingDraft {
   }
 }
 
+function clearTimeSelection(): void {
+  draft.startTime = ''
+  draft.endTime = ''
+  durationHours.value = null
+}
+
+function syncDurationFromTimeRange(): void {
+  if (draft.startTime === '' || draft.endTime === '') {
+    durationHours.value = null
+    return
+  }
+
+  const occupiedSlots = expandTimeRange(draft.startTime, draft.endTime)
+  durationHours.value = occupiedSlots.length > 0 ? occupiedSlots.length : null
+}
+
+function syncTimeRangeFromDuration(nextDurationHours: number | null): void {
+  if (draft.startTime === '' || nextDurationHours === null) {
+    draft.endTime = ''
+    return
+  }
+
+  const nextEndTime = availableEndSlots.value[nextDurationHours - 1]
+  draft.endTime = nextEndTime ?? ''
+}
+
 async function submitBooking(currentDraft: BookingDraft): Promise<void> {
   isSubmitting.value = true
   fieldErrors.value = {}
@@ -50,9 +131,10 @@ async function submitBooking(currentDraft: BookingDraft): Promise<void> {
 
   const result = await createBooking(currentDraft)
 
-  if (result.ok) {
-    successMessage.value = '预约草稿提交成功。'
+  if (result.ok && result.data !== undefined) {
+    successMessage.value = `预约创建成功：${result.data.date} ${result.data.startTime}-${result.data.endTime}，场地已写入列表与周历。`
     Object.assign(draft, createInitialDraft())
+    durationHours.value = null
     isSubmitting.value = false
     return
   }
@@ -85,6 +167,72 @@ async function loadVenueOptions(): Promise<void> {
   venues.value = result.data
   isLoadingVenues.value = false
 }
+
+watch(
+  () => draft.venueId,
+  () => {
+    clearTimeSelection()
+  },
+)
+
+watch(
+  () => draft.startTime,
+  (nextStartTime) => {
+    if (nextStartTime === '') {
+      draft.endTime = ''
+      durationHours.value = null
+      return
+    }
+
+    if (!availableStartSlots.value.includes(nextStartTime)) {
+      clearTimeSelection()
+      return
+    }
+
+    if (durationHours.value !== null) {
+      syncTimeRangeFromDuration(durationHours.value)
+      return
+    }
+
+    if (!availableEndSlots.value.includes(draft.endTime)) {
+      draft.endTime = ''
+      return
+    }
+
+    syncDurationFromTimeRange()
+  },
+)
+
+watch(durationHours, (nextDurationHours) => {
+  if (nextDurationHours === null) {
+    if (draft.endTime === '') {
+      return
+    }
+
+    syncDurationFromTimeRange()
+    return
+  }
+
+  syncTimeRangeFromDuration(nextDurationHours)
+})
+
+watch(
+  () => draft.endTime,
+  (nextEndTime) => {
+    if (nextEndTime === '') {
+      durationHours.value = null
+      return
+    }
+
+    if (!availableEndSlots.value.includes(nextEndTime)) {
+      draft.endTime = ''
+      durationHours.value = null
+      return
+    }
+
+    syncDurationFromTimeRange()
+  },
+)
 
 onMounted(async () => {
   await loadVenueOptions()
@@ -135,7 +283,7 @@ onMounted(async () => {
           <SharedFormField
             label="预约场地"
             for-id="booking-venue"
-            hint="先选择已维护的场地，再填写时段与联系人信息。"
+            hint="先选择已维护的场地，再填写日期、连续时段与联系人信息。"
             :required="true"
             :error="fieldErrors.venueId"
           >
@@ -234,7 +382,7 @@ onMounted(async () => {
           <SharedFormField
             label="开始时间"
             for-id="booking-start-time"
-            hint="仅支持 08:00-22:00 的整点时段。"
+            :hint="venueHoursMessage"
             :required="true"
             :error="fieldErrors.startTime"
           >
@@ -243,10 +391,33 @@ onMounted(async () => {
               v-model="draft.startTime"
               class="shared-control"
               :class="{ 'shared-control--error': fieldErrors.startTime }"
+              :disabled="selectedVenue === null || availableStartSlots.length === 0"
             >
-              <option value="">请选择开始时间</option>
-              <option v-for="slot in businessHourSlots" :key="`start-${slot}`" :value="slot">
+              <option value="">
+                {{ selectedVenue === null ? '请先选择场地' : '请选择开始时间' }}
+              </option>
+              <option v-for="slot in availableStartSlots" :key="`start-${slot}`" :value="slot">
                 {{ slot }}
+              </option>
+            </select>
+          </SharedFormField>
+
+          <SharedFormField
+            label="连续小时数"
+            for-id="booking-duration-hours"
+            hint="可直接选择连续预约时长，结束时间会自动同步。"
+          >
+            <select
+              id="booking-duration-hours"
+              v-model="durationHoursInput"
+              class="shared-control"
+              :disabled="draft.startTime === '' || durationOptions.length === 0"
+            >
+              <option value="">
+                {{ draft.startTime === '' ? '请先选择开始时间' : '请选择连续小时数' }}
+              </option>
+              <option v-for="option in durationOptions" :key="`duration-${option}`" :value="String(option)">
+                连续 {{ option }} 小时
               </option>
             </select>
           </SharedFormField>
@@ -254,7 +425,7 @@ onMounted(async () => {
           <SharedFormField
             label="结束时间"
             for-id="booking-end-time"
-            hint="结束时间需晚于开始时间。"
+            hint="结束时间需晚于开始时间，并落在场地营业时间内。"
             :required="true"
             :error="fieldErrors.endTime"
           >
@@ -263,9 +434,12 @@ onMounted(async () => {
               v-model="draft.endTime"
               class="shared-control"
               :class="{ 'shared-control--error': fieldErrors.endTime }"
+              :disabled="draft.startTime === '' || availableEndSlots.length === 0"
             >
-              <option value="">请选择结束时间</option>
-              <option v-for="slot in [...businessHourSlots, '22:00']" :key="`end-${slot}`" :value="slot">
+              <option value="">
+                {{ draft.startTime === '' ? '请先选择开始时间' : '请选择结束时间' }}
+              </option>
+              <option v-for="slot in availableEndSlots" :key="`end-${slot}`" :value="slot">
                 {{ slot }}
               </option>
             </select>
