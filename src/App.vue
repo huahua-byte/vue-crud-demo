@@ -33,12 +33,18 @@ const navigationItems: Array<{ to: string; label: string; routeName: string; des
 
 const currentPage = computed(() => {
   return (
-    navigationItems.find((item) => route.name === item.routeName || isActivePath(route.path, item.to)) ??
+    navigationItems.find((item) => isActivePath(route.path, item.to, route.name)) ??
     navigationItems[0]
   )
 })
 
-function isActivePath(currentPath: string, targetPath: string): boolean {
+function isActivePath(currentPath: string, targetPath: string, currentRouteName?: string): boolean {
+  const navigationItem = navigationItems.find((item) => item.to === targetPath)
+
+  if (navigationItem?.routeName === currentRouteName) {
+    return true
+  }
+
   if (targetPath === '/bookings') {
     return currentPath === targetPath
   }
@@ -72,7 +78,7 @@ function isActivePath(currentPath: string, targetPath: string): boolean {
           :key="item.to"
           :to="item.to"
           class="app-shell__nav-link"
-          :class="{ 'app-shell__nav-link--active': isActivePath(route.path, item.to) }"
+          :class="{ 'app-shell__nav-link--active': isActivePath(route.path, item.to, route.name) }"
         >
           <span class="app-shell__nav-label">{{ item.label }}</span>
           <span class="app-shell__nav-description">{{ item.description }}</span>
