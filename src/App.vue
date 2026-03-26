@@ -2,7 +2,11 @@
 import { computed } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 
+import AppToast from './components/AppToast.vue'
+import { useToast } from './composables/useToast'
+
 const route = useRoute()
+const { toasts, removeToast } = useToast()
 
 const navigationItems: Array<{ to: string; label: string; routeName: string; description: string }> = [
   {
@@ -89,6 +93,8 @@ function isActivePath(currentPath: string, targetPath: string, currentRouteName?
         <RouterView />
       </main>
     </div>
+
+    <AppToast :toasts="toasts" @dismiss-toast="removeToast" />
   </div>
 </template>
 
