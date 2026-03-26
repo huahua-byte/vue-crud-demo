@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "sh -c 'if [ -x node_modules/.bin/vue-tsc ]; then node_modules/.bin/vue-tsc --noEmit; else echo \"Skipping vue-tsc during build because node_modules/.bin/vue-tsc is not installed.\"; fi' && vite build",
+    "typecheck": "sh -c 'if [ -x node_modules/.bin/vue-tsc ]; then exec node_modules/.bin/vue-tsc --noEmit; else echo \"vue-tsc is not installed. Run npm install to restore devDependencies.\" >&2; exit 127; fi'",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -13,6 +14,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.5",
-    "vite": "^8.0.1"
+    "typescript": "^5.9.3",
+    "vite": "^8.0.1",
+    "vue-tsc": "^3.1.2"
   }
 }
