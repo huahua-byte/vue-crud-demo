@@ -7,6 +7,12 @@
     <title>vue-crud-demo</title>
   </head>
   <body>
+    <script>
+      (function () {
+        var t = localStorage.getItem('vue-crud-theme');
+        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      })();
+    </script>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

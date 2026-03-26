@@ -4,9 +4,11 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 
 import AppToast from './components/AppToast.vue'
 import { useToast } from './composables/useToast'
+import { useTheme } from './composables/useTheme'
 
 const route = useRoute()
 const { toasts, removeToast } = useToast()
+const { theme, toggleTheme } = useTheme()
 
 const navigationItems: Array<{ to: string; label: string; routeName: string; description: string }> = [
   {
@@ -73,6 +75,14 @@ function isActivePath(currentPath: string, targetPath: string, currentRouteName?
           <p class="app-shell__hero-label">当前页面</p>
           <p class="app-shell__hero-value">{{ currentPage.label }}</p>
           <p class="app-shell__hero-description">{{ currentPage.description }}</p>
+          <button
+            class="app-shell__theme-toggle"
+            type="button"
+            :aria-label="theme === 'light' ? '切换到深色模式' : '切换到浅色模式'"
+            @click="toggleTheme"
+          >
+            {{ theme === 'light' ? '深色模式' : '浅色模式' }}
+          </button>
         </div>
       </header>
 
@@ -99,4 +109,24 @@ function isActivePath(currentPath: string, targetPath: string, currentRouteName?
 </template>
 
 <style scoped>
+.app-shell__theme-toggle {
+  justify-self: start;
+  min-height: 40px;
+  padding: 0.5rem 1rem;
+  color: var(--color-primary);
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.app-shell__theme-toggle:hover {
+  border-color: var(--color-primary);
+  background: rgba(74, 144, 217, 0.08);
+}
 </style>

@@ -416,4 +416,57 @@ onMounted(async () => {
     min-width: 700px;
   }
 }
+
+[data-theme="dark"] .booking-calendar__select,
+[data-theme="dark"] .booking-calendar__input {
+  color: var(--color-text);
+  background: rgba(26, 29, 35, 0.92);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .booking-calendar__head,
+[data-theme="dark"] .booking-calendar__time,
+[data-theme="dark"] .booking-calendar__cell {
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .booking-calendar__head {
+  background: rgba(26, 29, 35, 0.96);
+}
+
+[data-theme="dark"] .booking-calendar__head--time,
+[data-theme="dark"] .booking-calendar__time {
+  background: rgba(34, 38, 46, 0.98);
+}
+
+[data-theme="dark"] .booking-calendar__head--time {
+  background: rgba(26, 29, 35, 0.98);
+}
+
+[data-theme="dark"] .booking-calendar__cell {
+  background: rgba(34, 38, 46, 0.9);
+}
+
+[data-theme="dark"] .booking-calendar__cell--available .booking-calendar__cell-label {
+  color: #7edba4;
+  background: rgba(60, 196, 116, 0.16);
+}
+
+[data-theme="dark"] .booking-calendar__cell--occupied {
+  background: rgba(156, 163, 175, 0.1);
+}
+
+[data-theme="dark"] .booking-calendar__cell--occupied .booking-calendar__cell-label {
+  color: #9ca3af;
+  background: rgba(156, 163, 175, 0.15);
+}
+
+[data-theme="dark"] .booking-calendar__cell--closed {
+  background: rgba(26, 29, 35, 0.5);
+}
+
+[data-theme="dark"] .booking-calendar__cell--closed .booking-calendar__cell-label {
+  color: var(--color-text-muted);
+  background: rgba(156, 163, 175, 0.1);
+}
 </style>
