@@ -96,6 +96,17 @@ export interface WeeklyCalendarCell {
   isBusinessHour: boolean
 }
 
+export interface WeeklyCalendarQuery {
+  date: string
+  venueId: string | null
+}
+
+export interface WeeklyCalendarResult {
+  weekStart: string
+  dates: string[]
+  cells: WeeklyCalendarCell[]
+}
+
 export interface VenueSearchFilter {
   keyword: string
   statuses: VenueStatus[]
@@ -136,5 +147,12 @@ export function createDefaultBookingFilter(): BookingFilter {
     dateTo: null,
     statuses: [],
     keyword: '',
+  }
+}
+
+export function createDefaultWeeklyCalendarQuery(date: string = '', venueId: string | null = null): WeeklyCalendarQuery {
+  return {
+    date,
+    venueId,
   }
 }
