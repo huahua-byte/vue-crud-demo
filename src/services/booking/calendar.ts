@@ -39,9 +39,11 @@ export async function getWeeklyCalendar(
   try {
     const weekStart = getStartOfWeek(query.date)
     const dates = Array.from({ length: DEFAULT_WEEK_VIEW_DAYS }, (_, index) => addDays(weekStart, index))
-    const venueIds = query.venueId === null ? store.venues.value.map((venue) => venue.id) : [query.venueId]
+    const venues = query.venueId === null
+      ? store.venues.value
+      : store.venues.value.filter((venue) => venue.id === query.venueId)
 
-    if (query.venueId !== null && !store.venues.value.some((venue) => venue.id === query.venueId)) {
+    if (query.venueId !== null && venues.length === 0) {
       return {
         ok: false,
         message: '场地不存在。',
@@ -64,14 +66,16 @@ export async function getWeeklyCalendar(
     }
 
     const slots = getBusinessHourSlots()
-    const cells = venueIds.flatMap((venueId) =>
+    const cells = venues.flatMap((venue) =>
       dates.flatMap((date) =>
         slots.map((time) =>
           createWeeklyCalendarCell({
             date,
             time,
-            venueId,
-            bookingId: findBookingId(bookingsResult.data as Booking[], date, time, venueId),
+            venueId: venue.id,
+            bookingId: findBookingId(bookingsResult.data as Booking[], date, time, venue.id),
+            openingTime: venue.openingTime,
+            closingTime: venue.closingTime,
           }),
         ),
       ),

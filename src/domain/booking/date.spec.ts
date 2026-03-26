@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { expandTimeRange, isFutureBookingDateTime } from './date'
+import { createWeeklyCalendarCell, expandTimeRange, isFutureBookingDateTime } from './date'
 
 describe('expandTimeRange()', () => {
   it('returns each occupied hour slot for a valid continuous range', () => {
@@ -30,5 +30,39 @@ describe('isFutureBookingDateTime()', () => {
 
   it('treats the same booking slot as not future when the timestamps are equal', () => {
     assert.equal(isFutureBookingDateTime('2026-03-30', '09:00', '2026-03-30T09:00:00.000Z'), false)
+  })
+})
+
+describe('createWeeklyCalendarCell()', () => {
+  it('marks a slot within venue business hours as selectable', () => {
+    const cell = createWeeklyCalendarCell({
+      date: '2026-03-30',
+      time: '09:00',
+      venueId: 'venue-1',
+      openingTime: '09:00',
+      closingTime: '20:00',
+    })
+
+    assert.equal(cell.isBusinessHour, true)
+  })
+
+  it('marks slots outside venue business hours as closed', () => {
+    const earlyCell = createWeeklyCalendarCell({
+      date: '2026-03-30',
+      time: '08:00',
+      venueId: 'venue-1',
+      openingTime: '09:00',
+      closingTime: '20:00',
+    })
+    const lateCell = createWeeklyCalendarCell({
+      date: '2026-03-30',
+      time: '20:00',
+      venueId: 'venue-1',
+      openingTime: '09:00',
+      closingTime: '20:00',
+    })
+
+    assert.equal(earlyCell.isBusinessHour, false)
+    assert.equal(lateCell.isBusinessHour, false)
   })
 })

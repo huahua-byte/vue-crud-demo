@@ -3,6 +3,7 @@ import { beforeEach, describe, it } from 'node:test'
 
 import { useBookingStore } from './useBookingStore'
 import { STORAGE_KEYS, type AppSeedMeta, type Booking, type BookingDraft, type Venue, type VenueDraft } from '../domain/booking'
+import { getWeeklyCalendar } from '../services/booking'
 
 class MemoryStorage {
   #map = new Map<string, string>()
@@ -117,7 +118,10 @@ function resetStoreState(): void {
     bookingCount: 0,
   }
 
-  store.venues.value = [createVenue(), createVenue({ id: 'venue-2', name: 'Riverside Studio' })]
+  store.venues.value = [
+    createVenue(),
+    createVenue({ id: 'venue-2', name: 'Riverside Studio', openingTime: '09:00', closingTime: '20:00' }),
+  ]
   store.bookings.value = []
   store.seedMeta.value = seedMeta
   store.initialized.value = true
@@ -286,5 +290,64 @@ describe('useBookingStore().deleteVenue()', () => {
     assert.equal(result.ok, true)
     assert.equal(result.data?.id, 'venue-1')
     assert.equal(store.venues.value.some((venue) => venue.id === 'venue-1'), false)
+  })
+})
+
+describe('getWeeklyCalendar()', () => {
+  it('marks each occupied hour cell for a multi-hour booking', async () => {
+    const store = useBookingStore()
+    store.bookings.value = [createBooking()]
+
+    const result = await getWeeklyCalendar({
+      date: '2026-03-30',
+      venueId: 'venue-1',
+    })
+
+    assert.equal(result.ok, true)
+    assert.deepEqual(result.data?.dates, [
+      '2026-03-30',
+      '2026-03-31',
+      '2026-04-01',
+      '2026-04-02',
+      '2026-04-03',
+      '2026-04-04',
+      '2026-04-05',
+    ])
+
+    const occupiedSlots = result.data?.cells
+      .filter((cell) => cell.bookingId === 'booking-1')
+      .map((cell) => `${cell.date} ${cell.time}`)
+
+    assert.deepEqual(occupiedSlots, ['2026-03-30 09:00', '2026-03-30 10:00'])
+  })
+
+  it('isolates cells by venue and preserves closed hours for narrower schedules', async () => {
+    const store = useBookingStore()
+    store.bookings.value = [createBooking()]
+
+    const venueOneCalendar = await getWeeklyCalendar({
+      date: '2026-03-30',
+      venueId: 'venue-1',
+    })
+    const venueTwoCalendar = await getWeeklyCalendar({
+      date: '2026-03-30',
+      venueId: 'venue-2',
+    })
+
+    const venueOneOccupiedSlots = venueOneCalendar.data?.cells
+      .filter((cell) => cell.bookingId === 'booking-1')
+      .map((cell) => `${cell.date} ${cell.time}`)
+    const venueTwoOccupiedCells = venueTwoCalendar.data?.cells.filter((cell) => cell.bookingId !== null) ?? []
+    const earlyCell = venueTwoCalendar.data?.cells.find((cell) => cell.date === '2026-03-30' && cell.time === '08:00')
+    const firstOpenCell = venueTwoCalendar.data?.cells.find((cell) => cell.date === '2026-03-30' && cell.time === '09:00')
+    const lateCell = venueTwoCalendar.data?.cells.find((cell) => cell.date === '2026-03-30' && cell.time === '20:00')
+
+    assert.equal(venueOneCalendar.ok, true)
+    assert.equal(venueTwoCalendar.ok, true)
+    assert.deepEqual(venueOneOccupiedSlots, ['2026-03-30 09:00', '2026-03-30 10:00'])
+    assert.equal(venueTwoOccupiedCells.length, 0)
+    assert.equal(earlyCell?.isBusinessHour, false)
+    assert.equal(firstOpenCell?.isBusinessHour, true)
+    assert.equal(lateCell?.isBusinessHour, false)
   })
 })
