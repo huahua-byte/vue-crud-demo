@@ -21,8 +21,8 @@ export async function createBooking(draft: BookingDraft): Promise<StoreActionRes
   return store.createBooking(draft)
 }
 
-export async function deleteBooking(bookingId: string): Promise<StoreActionResult<{ id: string }>> {
+export async function cancelBooking(bookingId: string): Promise<StoreActionResult<Booking>> {
   const store = useBookingStore()
 
-  return store.deleteBooking(bookingId)
+  return store.cancelBooking(bookingId)
 }

@@ -345,6 +345,7 @@ function createBooking(draft: BookingDraft): StoreActionResult<Booking> {
   const booking: Booking = {
     id: generateId('booking'),
     venueId: venue.id,
+    venueNameSnapshot: venue.name,
     title: draft.title.trim(),
     contactName: draft.contactName.trim(),
     contactPhone: draft.contactPhone.trim(),
@@ -367,24 +368,30 @@ function createBooking(draft: BookingDraft): StoreActionResult<Booking> {
   }
 }
 
-function deleteBooking(bookingId: string): StoreActionResult<{ id: string }> {
+function cancelBooking(bookingId: string): StoreActionResult<Booking> {
   ensureInitialized()
 
-  const hasBooking = state.bookings.some((booking) => booking.id === bookingId)
+  const existingBooking = state.bookings.find((booking) => booking.id === bookingId)
 
-  if (!hasBooking) {
+  if (existingBooking === undefined) {
     return {
       ok: false,
       message: '预约不存在。',
     }
   }
 
-  state.bookings = state.bookings.filter((booking) => booking.id !== bookingId)
+  const cancelledBooking: Booking = {
+    ...existingBooking,
+    status: 'cancelled',
+    updatedAt: new Date().toISOString(),
+  }
+
+  state.bookings = state.bookings.map((booking) => (booking.id === bookingId ? cancelledBooking : booking))
   syncBookings()
 
   return {
     ok: true,
-    data: { id: bookingId },
+    data: cancelledBooking,
   }
 }
 
@@ -404,7 +411,7 @@ export function useBookingStore() {
     deleteVenue,
     getBookings,
     createBooking,
-    deleteBooking,
+    cancelBooking,
     getOccupiedSlots,
   }
 }

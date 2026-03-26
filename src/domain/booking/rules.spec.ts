@@ -15,6 +15,7 @@ function createBooking(overrides: Partial<Booking> = {}): Booking {
   return {
     id: 'booking-1',
     venueId: 'venue-1',
+    venueNameSnapshot: 'Main Hall',
     title: 'Team Workshop',
     contactName: 'Alex Chen',
     contactPhone: '13800000000',
@@ -173,6 +174,18 @@ describe('findBookingConflict()', () => {
     assert.equal(conflict, null)
   })
 
+  it('ignores cancelled bookings when checking conflicts', () => {
+    const conflict = findBookingConflict([createBooking({ status: 'cancelled' })], {
+      id: 'booking-2',
+      venueId: 'venue-1',
+      date: '2026-03-30',
+      startTime: '10:00',
+      endTime: '12:00',
+    })
+
+    assert.equal(conflict, null)
+  })
+
   it('ignores bookings from other venues or dates', () => {
     const bookings = [
       createBooking(),
@@ -228,6 +241,13 @@ describe('hasFutureVenueBookings()', () => {
     ]
 
     assert.equal(hasFutureVenueBookings(bookings, 'venue-1', '2026-03-26T08:00:00.000Z'), false)
+  })
+
+  it('ignores cancelled future bookings', () => {
+    assert.equal(
+      hasFutureVenueBookings([createBooking({ status: 'cancelled' })], 'venue-1', '2026-03-26T08:00:00.000Z'),
+      false,
+    )
   })
 })
 

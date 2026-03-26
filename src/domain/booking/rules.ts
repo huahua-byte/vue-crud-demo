@@ -211,6 +211,10 @@ export function findBookingConflict(bookings: Booking[], candidate: BookingTimeR
       continue
     }
 
+    if (booking.status === 'cancelled') {
+      continue
+    }
+
     if (booking.venueId !== candidate.venueId) {
       continue
     }
@@ -229,7 +233,10 @@ export function findBookingConflict(bookings: Booking[], candidate: BookingTimeR
 
 export function hasFutureVenueBookings(bookings: Booking[], venueId: string, now?: string): boolean {
   return bookings.some(
-    (booking) => booking.venueId === venueId && isFutureBookingDateTime(booking.date, booking.startTime, now),
+    (booking) =>
+      booking.status !== 'cancelled' &&
+      booking.venueId === venueId &&
+      isFutureBookingDateTime(booking.date, booking.startTime, now),
   )
 }
 

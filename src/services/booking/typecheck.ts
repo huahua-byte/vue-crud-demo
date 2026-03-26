@@ -1,5 +1,6 @@
 import {
   createDefaultWeeklyCalendarQuery,
+  type Booking,
   type BookingDraft,
   type StoreActionResult,
   type VenueDraft,
@@ -8,7 +9,7 @@ import {
 import {
   createBooking,
   createVenue,
-  deleteBooking,
+  cancelBooking,
   deleteVenue,
   getBookings,
   getVenueById,
@@ -59,9 +60,9 @@ async function verifyServiceContracts(): Promise<void> {
   const calendarQuery = createDefaultWeeklyCalendarQuery('2026-03-30', 'venue-1')
   const calendarResult = await getWeeklyCalendar(calendarQuery)
 
-  const deleteBookingResult = createResult.ok && createResult.data
-    ? await deleteBooking(createResult.data.id)
-    : ({ ok: false, message: '预约创建失败。' } satisfies StoreActionResult<{ id: string }>)
+  const cancelBookingResult = createResult.ok && createResult.data
+    ? await cancelBooking(createResult.data.id)
+    : ({ ok: false, message: '预约创建失败。' } satisfies StoreActionResult<Booking>)
 
   const deleteVenueResult = await deleteVenue('venue-1')
 
@@ -105,8 +106,8 @@ async function verifyServiceContracts(): Promise<void> {
     throw new Error('Expected weekly calendar to start from the Monday of the query week.')
   }
 
-  if (deleteBookingResult.ok !== true) {
-    throw new Error('Expected deleteBooking() to delete the newly created booking.')
+  if (cancelBookingResult.ok !== true || cancelBookingResult.data?.status !== 'cancelled') {
+    throw new Error('Expected cancelBooking() to soft-cancel the newly created booking.')
   }
 
   if (deleteVenueResult.ok !== false || deleteVenueResult.message !== '当前场地存在未来预约，删除前请先处理相关预约。') {
