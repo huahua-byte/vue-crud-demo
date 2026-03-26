@@ -1,14 +1,20 @@
 import {
+  APP_SEED_VERSION,
   BOOKING_STATUSES,
   DATE_FORMAT,
   STORAGE_KEYS,
   VENUE_STATUSES,
+  createSeedVenues,
   createDefaultBookingFilter,
   createDefaultVenueSearchFilter,
   createWeeklyCalendarCell,
+  ensureBookingStorageSeeded,
   isBookingStatus,
   isIsoDateString,
   isVenueStatus,
+  loadBookings,
+  loadSeedMeta,
+  loadVenues,
   type AppSeedMeta,
   type Booking,
   type Venue,
@@ -54,6 +60,13 @@ const seedMeta: AppSeedMeta = {
   bookingCount: 1,
 }
 
+const seededVenues = createSeedVenues('2026-03-26T08:00:00.000Z')
+const firstSeedVenue: Venue = seededVenues[0]
+const venues: Venue[] = loadVenues()
+const bookings: Booking[] = loadBookings()
+const loadedSeedMeta: AppSeedMeta | null = loadSeedMeta()
+const seeded = ensureBookingStorageSeeded(APP_SEED_VERSION)
+
 const cell = createWeeklyCalendarCell({
   date: booking.date,
   time: booking.startTime,
@@ -76,4 +89,16 @@ void venueFilter
 void bookingFilter
 void seedMeta
 void cell
+void firstSeedVenue
+void venues
+void bookings
+void loadedSeedMeta
+void seeded
 void STORAGE_KEYS
+
+const seededVenueCount: number = seeded.seedMeta.venueCount
+const seededBookingCount: number = seeded.seedMeta.bookingCount
+
+if (seededVenueCount !== 3 || seededBookingCount !== 0) {
+  throw new Error('Expected initial booking storage seed counts to stay stable.')
+}
