@@ -6,6 +6,9 @@ import {
   ensureBookingStorageSeeded,
   expandTimeRange,
   findBookingConflict,
+  loadBookings,
+  loadSeedMeta,
+  loadVenues,
   saveBookings,
   saveSeedMeta,
   saveVenues,
@@ -36,17 +39,31 @@ const state = reactive<{
   initialized: false,
 })
 
+function resetTransientState(): void {
+  state.venues = []
+  state.bookings = []
+  state.seedMeta = null
+  state.initialized = false
+}
+
+function reloadFromStorage(): void {
+  const seeded = ensureBookingStorageSeeded()
+  const venues = loadVenues()
+  const bookings = loadBookings()
+  const seedMeta = loadSeedMeta()
+
+  state.venues = venues.length > 0 ? venues : seeded.venues
+  state.bookings = bookings
+  state.seedMeta = seedMeta ?? seeded.seedMeta
+  state.initialized = true
+}
+
 function ensureInitialized(): void {
   if (state.initialized) {
     return
   }
 
-  const seeded = ensureBookingStorageSeeded()
-
-  state.venues = seeded.venues
-  state.bookings = seeded.bookings
-  state.seedMeta = seeded.seedMeta
-  state.initialized = true
+  reloadFromStorage()
 }
 
 function generateId(prefix: string): string {
@@ -73,6 +90,8 @@ function syncVenues(): void {
     }
     saveSeedMeta(state.seedMeta)
   }
+
+  state.venues = loadVenues()
 }
 
 function syncBookings(): void {
@@ -85,6 +104,8 @@ function syncBookings(): void {
     }
     saveSeedMeta(state.seedMeta)
   }
+
+  state.bookings = loadBookings()
 }
 
 function matchesVenueFilter(venue: Venue, filter: VenueSearchFilter): boolean {
@@ -413,5 +434,7 @@ export function useBookingStore() {
     createBooking,
     cancelBooking,
     getOccupiedSlots,
+    reloadFromStorage,
+    resetTransientState,
   }
 }

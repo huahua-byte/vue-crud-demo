@@ -89,6 +89,7 @@ async function loadVenues(): Promise<void> {
 async function loadCalendar(query: WeeklyCalendarQuery): Promise<void> {
   if (query.venueId === null || query.venueId === '') {
     calendar.value = null
+    isLoadingCalendar.value = false
     return
   }
 
@@ -150,6 +151,7 @@ watch(
 )
 
 onMounted(async () => {
+  store.reloadFromStorage()
   await loadVenues()
 })
 </script>
@@ -261,6 +263,7 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 240px));
   gap: var(--spacing-md);
+  min-width: 0;
 }
 
 .booking-calendar__field {
@@ -385,6 +388,32 @@ onMounted(async () => {
 
   .booking-calendar__table {
     min-width: 760px;
+  }
+
+  .booking-calendar__head,
+  .booking-calendar__time,
+  .booking-calendar__cell {
+    padding: 0.75rem 0.6rem;
+  }
+
+  .booking-calendar__head--time,
+  .booking-calendar__time {
+    min-width: 104px;
+  }
+
+  .booking-calendar__cell {
+    min-width: 92px;
+  }
+}
+
+@media (max-width: 420px) {
+  .booking-calendar__scroller {
+    margin-inline: -0.25rem;
+    padding-inline: 0.25rem;
+  }
+
+  .booking-calendar__table {
+    min-width: 700px;
   }
 }
 </style>

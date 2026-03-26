@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import {
   BUSINESS_HOUR_END,
@@ -13,6 +14,7 @@ import {
 } from '../domain/booking'
 import { createBooking, getVenues } from '../services/booking'
 import { SharedFeedbackMessage, SharedFormField, SharedPanel, mapBookingValidationToMessages } from '../components/shared'
+import { useBookingStore } from '../stores/useBookingStore'
 
 const pageTitle = '创建预约'
 const draft = reactive<BookingDraft>(createInitialDraft())
@@ -24,6 +26,8 @@ const generalErrors = ref<string[]>([])
 const successMessage = ref('')
 const loadErrorMessage = ref('')
 const durationHours = ref<number | null>(null)
+const route = useRoute()
+const store = useBookingStore()
 const statusMessage = computed(() => {
   if (isLoadingVenues.value) {
     return '正在加载场地选项...'
@@ -103,6 +107,16 @@ function clearTimeSelection(): void {
   durationHours.value = null
 }
 
+function clearFieldError(fieldName: keyof BookingFieldErrors): void {
+  if (fieldErrors.value[fieldName] === undefined) {
+    return
+  }
+
+  const nextFieldErrors = { ...fieldErrors.value }
+  delete nextFieldErrors[fieldName]
+  fieldErrors.value = nextFieldErrors
+}
+
 function syncDurationFromTimeRange(): void {
   if (draft.startTime === '' || draft.endTime === '') {
     durationHours.value = null
@@ -123,6 +137,50 @@ function syncTimeRangeFromDuration(nextDurationHours: number | null): void {
   draft.endTime = nextEndTime ?? ''
 }
 
+function syncDraftWithVenueOptions(): void {
+  if (draft.venueId === '') {
+    clearFieldError('venueId')
+    return
+  }
+
+  if (selectedVenue.value === null) {
+    fieldErrors.value = {
+      ...fieldErrors.value,
+      venueId: '所选场地不存在。',
+    }
+    clearTimeSelection()
+    draft.venueId = ''
+    return
+  }
+
+  clearFieldError('venueId')
+
+  if (draft.startTime !== '' && !availableStartSlots.value.includes(draft.startTime)) {
+    const businessHourMessage =
+      `所选场地营业时间为 ${selectedVenue.value.openingTime}-${selectedVenue.value.closingTime}。 ` +
+      '请选择营业时间内的开始/结束时间。'
+    clearTimeSelection()
+    fieldErrors.value = {
+      ...fieldErrors.value,
+      startTime: businessHourMessage,
+      endTime: businessHourMessage,
+    }
+    return
+  }
+
+  if (draft.endTime !== '' && !availableEndSlots.value.includes(draft.endTime)) {
+    clearTimeSelection()
+    fieldErrors.value = {
+      ...fieldErrors.value,
+      endTime: '结束时间已失效，请重新选择连续时段。',
+    }
+    return
+  }
+
+  clearFieldError('startTime')
+  clearFieldError('endTime')
+}
+
 async function submitBooking(currentDraft: BookingDraft): Promise<void> {
   isSubmitting.value = true
   fieldErrors.value = {}
@@ -135,6 +193,7 @@ async function submitBooking(currentDraft: BookingDraft): Promise<void> {
     successMessage.value = `预约创建成功：${result.data.date} ${result.data.startTime}-${result.data.endTime}，场地已写入列表与周历。`
     Object.assign(draft, createInitialDraft())
     durationHours.value = null
+    await loadVenueOptions()
     isSubmitting.value = false
     return
   }
@@ -165,6 +224,7 @@ async function loadVenueOptions(): Promise<void> {
   }
 
   venues.value = result.data
+  syncDraftWithVenueOptions()
   isLoadingVenues.value = false
 }
 
@@ -172,6 +232,8 @@ watch(
   () => draft.venueId,
   () => {
     clearTimeSelection()
+    clearFieldError('startTime')
+    clearFieldError('endTime')
   },
 )
 
@@ -234,7 +296,22 @@ watch(
   },
 )
 
+watch(
+  () => store.venues.value,
+  async () => {
+    await loadVenueOptions()
+  },
+)
+
+watch(
+  () => route.fullPath,
+  async () => {
+    await loadVenueOptions()
+  },
+)
+
 onMounted(async () => {
+  store.reloadFromStorage()
   await loadVenueOptions()
 })
 </script>

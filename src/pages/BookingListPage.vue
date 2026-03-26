@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { createDefaultBookingFilter, type Booking } from '../domain/booking'
 import { cancelBooking, getBookings } from '../services/booking'
 import { useToast } from '../composables/useToast'
 import { SharedConfirmDialog, SharedEmptyState, SharedFeedbackMessage, SharedPanel } from '../components/shared'
+import { useBookingStore } from '../stores/useBookingStore'
 
 const pageTitle = '预约列表'
 const bookings = ref<Booking[]>([])
@@ -16,6 +17,7 @@ const bookingPendingCancelId = ref<string | null>(null)
 const isCancelling = ref(false)
 const router = useRouter()
 const { showError, showSuccess } = useToast()
+const store = useBookingStore()
 
 const statusMessage = computed(() => {
   if (isLoading.value) {
@@ -49,9 +51,8 @@ async function loadBookings(): Promise<void> {
   isLoading.value = false
 }
 
-async function clearDateFilter(): Promise<void> {
+function clearDateFilter(): void {
   selectedDate.value = ''
-  await loadBookings()
 }
 
 function requestCancelBooking(bookingId: string): void {
@@ -77,13 +78,25 @@ async function confirmCancelBooking(bookingId: string): Promise<void> {
     return
   }
 
-  showSuccess('预约已取消。')
+  showSuccess(result.data?.title ? `预约“${result.data.title}”已取消。` : '预约已取消。')
   bookingPendingCancelId.value = null
   isCancelling.value = false
   await loadBookings()
 }
 
+watch(
+  () => store.bookings.value,
+  async () => {
+    await loadBookings()
+  },
+)
+
+watch(selectedDate, async () => {
+  await loadBookings()
+})
+
 onMounted(async () => {
+  store.reloadFromStorage()
   await loadBookings()
 })
 </script>
@@ -109,7 +122,7 @@ onMounted(async () => {
         <div class="shared-list__filters">
           <label class="shared-list__filter-field">
             <span class="shared-list__detail-label">预约日期</span>
-            <input v-model="selectedDate" class="shared-control" type="date" @change="loadBookings" />
+            <input v-model="selectedDate" class="shared-control" type="date" />
           </label>
           <button
             class="shared-button shared-button--secondary"
@@ -242,5 +255,20 @@ onMounted(async () => {
 .booking-list-page__status--cancelled {
   background: rgba(231, 76, 60, 0.12);
   color: var(--color-danger);
+}
+
+@media (max-width: 640px) {
+  .shared-list__filters > * {
+    width: 100%;
+  }
+
+  .shared-list__filter-field {
+    min-width: 0;
+  }
+
+  .booking-list-page__status {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
