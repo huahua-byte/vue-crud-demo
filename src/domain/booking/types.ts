@@ -7,6 +7,7 @@ export interface Venue {
   name: string
   location: string
   capacity: number
+  hourlyPrice: number
   amenities: string[]
   openingTime: string
   closingTime: string
@@ -48,6 +49,7 @@ export interface VenueDraft {
   name: string
   location: string
   capacity: number
+  hourlyPrice: number
   amenities: string[]
   openingTime: string
   closingTime: string
@@ -81,11 +83,27 @@ export interface BookingValidationResult {
   generalErrors: string[]
 }
 
+export interface VenueFieldErrors {
+  name?: string
+  location?: string
+  capacity?: string
+  description?: string
+  hourlyPrice?: string
+}
+
+export interface VenueValidationResult {
+  isValid: boolean
+  fieldErrors: VenueFieldErrors
+  generalErrors: string[]
+}
+
+export type ValidationResult = BookingValidationResult | VenueValidationResult
+
 export interface StoreActionResult<T> {
   ok: boolean
   data?: T
   message?: string
-  validation?: BookingValidationResult
+  validation?: ValidationResult
 }
 
 export interface WeeklyCalendarCell {

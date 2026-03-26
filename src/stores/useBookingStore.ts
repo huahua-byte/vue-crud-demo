@@ -10,13 +10,16 @@ import {
   saveSeedMeta,
   saveVenues,
   validateBookingDraft,
+  validateVenueDraft,
   type AppSeedMeta,
   type Booking,
   type BookingDraft,
   type BookingFilter,
   type BookingValidationResult,
   type StoreActionResult,
+  type ValidationResult,
   type Venue,
+  type VenueDraft,
   type VenueSearchFilter,
 } from '../domain/booking'
 
@@ -53,7 +56,7 @@ function generateId(prefix: string): string {
   return `${prefix}-${Date.now()}`
 }
 
-function getValidationMessage(validation: BookingValidationResult): string {
+function getValidationMessage(validation: ValidationResult): string {
   const firstFieldError = Object.values(validation.fieldErrors)[0]
 
   return firstFieldError ?? validation.generalErrors[0] ?? '提交的数据校验失败。'
@@ -85,12 +88,7 @@ function syncBookings(): void {
 
 function matchesVenueFilter(venue: Venue, filter: VenueSearchFilter): boolean {
   const keyword = filter.keyword.trim().toLowerCase()
-  const hasKeyword =
-    keyword.length === 0 ||
-    venue.name.toLowerCase().includes(keyword) ||
-    venue.location.toLowerCase().includes(keyword) ||
-    venue.description.toLowerCase().includes(keyword) ||
-    venue.amenities.some((amenity) => amenity.toLowerCase().includes(keyword))
+  const hasKeyword = keyword.length === 0 || venue.name.toLowerCase().includes(keyword)
 
   const matchesStatus = filter.statuses.length === 0 || filter.statuses.includes(venue.status)
   const matchesMinCapacity = filter.minCapacity === null || venue.capacity >= filter.minCapacity
@@ -141,6 +139,89 @@ function getVenueById(venueId: string): StoreActionResult<Venue> {
   return {
     ok: true,
     data: venue,
+  }
+}
+
+function createVenue(draft: VenueDraft): StoreActionResult<Venue> {
+  ensureInitialized()
+
+  const validation = validateVenueDraft(draft)
+
+  if (!validation.isValid) {
+    return {
+      ok: false,
+      message: getValidationMessage(validation),
+      validation,
+    }
+  }
+
+  const now = new Date().toISOString()
+  const venue: Venue = {
+    id: generateId('venue'),
+    name: draft.name.trim(),
+    location: draft.location.trim(),
+    capacity: draft.capacity,
+    hourlyPrice: draft.hourlyPrice,
+    amenities: [...draft.amenities],
+    openingTime: draft.openingTime,
+    closingTime: draft.closingTime,
+    status: draft.status,
+    description: draft.description.trim(),
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  state.venues = [venue, ...state.venues]
+  syncVenues()
+
+  return {
+    ok: true,
+    data: venue,
+  }
+}
+
+function updateVenue(venueId: string, draft: VenueDraft): StoreActionResult<Venue> {
+  ensureInitialized()
+
+  const existingVenue = state.venues.find((entry) => entry.id === venueId)
+
+  if (existingVenue === undefined) {
+    return {
+      ok: false,
+      message: '场地不存在。',
+    }
+  }
+
+  const validation = validateVenueDraft(draft)
+
+  if (!validation.isValid) {
+    return {
+      ok: false,
+      message: getValidationMessage(validation),
+      validation,
+    }
+  }
+
+  const updatedVenue: Venue = {
+    ...existingVenue,
+    name: draft.name.trim(),
+    location: draft.location.trim(),
+    capacity: draft.capacity,
+    hourlyPrice: draft.hourlyPrice,
+    amenities: [...draft.amenities],
+    openingTime: draft.openingTime,
+    closingTime: draft.closingTime,
+    status: draft.status,
+    description: draft.description.trim(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  state.venues = state.venues.map((entry) => (entry.id === venueId ? updatedVenue : entry))
+  syncVenues()
+
+  return {
+    ok: true,
+    data: updatedVenue,
   }
 }
 
@@ -302,6 +383,8 @@ export function useBookingStore() {
     ...toRefs(state),
     getVenues,
     getVenueById,
+    createVenue,
+    updateVenue,
     deleteVenue,
     getBookings,
     createBooking,

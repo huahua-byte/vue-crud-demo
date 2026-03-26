@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { beforeEach, describe, it } from 'node:test'
 
 import { useBookingStore } from './useBookingStore'
-import type { AppSeedMeta, Booking, BookingDraft, Venue } from '../domain/booking'
+import { STORAGE_KEYS, type AppSeedMeta, type Booking, type BookingDraft, type Venue, type VenueDraft } from '../domain/booking'
 
 class MemoryStorage {
   #map = new Map<string, string>()
@@ -45,6 +45,7 @@ function createVenue(overrides: Partial<Venue> = {}): Venue {
     name: 'Main Hall',
     location: '1F East Wing',
     capacity: 120,
+    hourlyPrice: 300,
     amenities: ['projector', 'sound-system'],
     openingTime: '08:00',
     closingTime: '22:00',
@@ -52,6 +53,21 @@ function createVenue(overrides: Partial<Venue> = {}): Venue {
     description: 'Primary event venue with full AV support.',
     createdAt: '2026-03-26T08:00:00.000Z',
     updatedAt: '2026-03-26T08:00:00.000Z',
+    ...overrides,
+  }
+}
+
+function createVenueDraft(overrides: Partial<VenueDraft> = {}): VenueDraft {
+  return {
+    name: 'Main Hall',
+    location: '1F East Wing',
+    capacity: 120,
+    hourlyPrice: 300,
+    amenities: ['projector', 'sound-system'],
+    openingTime: '08:00',
+    closingTime: '22:00',
+    status: 'active',
+    description: 'Primary event venue with full AV support.',
     ...overrides,
   }
 }
@@ -126,6 +142,64 @@ describe('useBookingStore().createBooking()', () => {
 
     assert.equal(result.ok, false)
     assert.match(result.validation?.generalErrors[0] ?? '', /预约时间冲突/)
+  })
+})
+
+describe('useBookingStore() venue CRUD', () => {
+  it('filters venues by name keyword only', () => {
+    const store = useBookingStore()
+
+    const result = store.getVenues({
+      keyword: 'Main',
+      statuses: [],
+      minCapacity: null,
+      maxCapacity: null,
+      amenity: null,
+    })
+
+    assert.equal(result.ok, true)
+    assert.deepEqual(
+      result.data?.map((venue) => venue.name),
+      ['Main Hall'],
+    )
+  })
+
+  it('creates a venue and persists it to localStorage immediately', () => {
+    const store = useBookingStore()
+
+    const result = store.createVenue(
+      createVenueDraft({
+        name: 'Sky Forum',
+        location: '8F West Wing',
+        capacity: 200,
+        hourlyPrice: 520,
+      }),
+    )
+
+    assert.equal(result.ok, true)
+    assert.equal(store.venues.value[0]?.name, 'Sky Forum')
+
+    const savedVenues = JSON.parse(localStorageStub.getItem(STORAGE_KEYS.venues) ?? '[]') as Venue[]
+    assert.equal(savedVenues[0]?.name, 'Sky Forum')
+    assert.equal(savedVenues[0]?.hourlyPrice, 520)
+  })
+
+  it('updates venue fields in place', () => {
+    const store = useBookingStore()
+
+    const result = store.updateVenue(
+      'venue-1',
+      createVenueDraft({
+        name: 'Main Hall Plus',
+        description: 'Upgraded AV support and modular seating.',
+        hourlyPrice: 360,
+      }),
+    )
+
+    assert.equal(result.ok, true)
+    assert.equal(result.data?.name, 'Main Hall Plus')
+    assert.equal(result.data?.hourlyPrice, 360)
+    assert.equal(store.venues.value[0]?.description, 'Upgraded AV support and modular seating.')
   })
 })
 

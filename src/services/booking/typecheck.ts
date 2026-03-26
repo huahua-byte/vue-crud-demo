@@ -2,16 +2,19 @@ import {
   createDefaultWeeklyCalendarQuery,
   type BookingDraft,
   type StoreActionResult,
+  type VenueDraft,
   type WeeklyCalendarResult,
 } from '../../domain/booking'
 import {
   createBooking,
+  createVenue,
   deleteBooking,
   deleteVenue,
   getBookings,
   getVenueById,
   getVenues,
   getWeeklyCalendar,
+  updateVenue,
 } from './index'
 
 const draft: BookingDraft = {
@@ -26,12 +29,33 @@ const draft: BookingDraft = {
   notes: 'Need projector support',
 }
 
+const venueDraft: VenueDraft = {
+  name: 'Sky Forum',
+  location: '8F West Wing',
+  capacity: 200,
+  hourlyPrice: 520,
+  amenities: ['wifi', 'projector'],
+  openingTime: '08:00',
+  closingTime: '22:00',
+  status: 'active',
+  description: 'Large venue for conferences and launch events.',
+}
+
 async function verifyServiceContracts(): Promise<void> {
   const venuesResult = await getVenues()
   const venueResult = await getVenueById('venue-1')
   const bookingsBeforeCreate = await getBookings()
   const createResult = await createBooking(draft)
   const conflictResult = await createBooking(draft)
+  const createVenueResult = await createVenue(venueDraft)
+  const updateVenueResult =
+    createVenueResult.ok && createVenueResult.data
+      ? await updateVenue(createVenueResult.data.id, {
+          ...venueDraft,
+          name: 'Sky Forum Plus',
+          hourlyPrice: 560,
+        })
+      : ({ ok: false, message: '场地创建失败。' } satisfies StoreActionResult<{ id: string }>)
   const calendarQuery = createDefaultWeeklyCalendarQuery('2026-03-30', 'venue-1')
   const calendarResult = await getWeeklyCalendar(calendarQuery)
 
@@ -59,6 +83,14 @@ async function verifyServiceContracts(): Promise<void> {
 
   if (conflictResult.ok) {
     throw new Error('Expected createBooking() to surface a booking conflict for overlapping time ranges.')
+  }
+
+  if (!createVenueResult.ok || !createVenueResult.data?.id) {
+    throw new Error('Expected createVenue() to succeed for a valid venue draft.')
+  }
+
+  if (!updateVenueResult.ok || updateVenueResult.data?.name !== 'Sky Forum Plus' || updateVenueResult.data.hourlyPrice !== 560) {
+    throw new Error('Expected updateVenue() to preserve updated venue fields.')
   }
 
   if (!conflictResult.message?.includes('预约时间冲突')) {

@@ -6,11 +6,31 @@ import {
   isFutureBookingDateTime,
   isIsoDateString,
 } from './date'
-import type { Booking, BookingDraft, BookingFieldErrors, BookingTimeRange, BookingValidationResult } from './types'
+import type {
+  Booking,
+  BookingDraft,
+  BookingFieldErrors,
+  BookingTimeRange,
+  BookingValidationResult,
+  VenueDraft,
+  VenueFieldErrors,
+  VenueValidationResult,
+} from './types'
 
 const PHONE_PATTERN = /^1\d{10}$/
 
 function createValidationResult(fieldErrors: BookingFieldErrors = {}, generalErrors: string[] = []): BookingValidationResult {
+  return {
+    isValid: Object.keys(fieldErrors).length === 0 && generalErrors.length === 0,
+    fieldErrors,
+    generalErrors,
+  }
+}
+
+function createVenueValidationResult(
+  fieldErrors: VenueFieldErrors = {},
+  generalErrors: string[] = [],
+): VenueValidationResult {
   return {
     isValid: Object.keys(fieldErrors).length === 0 && generalErrors.length === 0,
     fieldErrors,
@@ -133,6 +153,32 @@ export function validateBookingDraft(draft: BookingDraft): BookingValidationResu
   }
 
   return mergeValidationResults(requiredValidation, createValidationResult(fieldErrors))
+}
+
+export function validateVenueDraft(draft: VenueDraft): VenueValidationResult {
+  const fieldErrors: VenueFieldErrors = {}
+
+  if (isBlank(draft.name)) {
+    fieldErrors.name = '请输入场地名称。'
+  }
+
+  if (isBlank(draft.location)) {
+    fieldErrors.location = '请输入场地位置。'
+  }
+
+  if (!Number.isInteger(draft.capacity) || draft.capacity <= 0) {
+    fieldErrors.capacity = '容纳人数必须为大于 0 的整数。'
+  }
+
+  if (isBlank(draft.description)) {
+    fieldErrors.description = '请输入设施描述。'
+  }
+
+  if (!Number.isInteger(draft.hourlyPrice) || draft.hourlyPrice < 0) {
+    fieldErrors.hourlyPrice = '每小时价格必须为大于等于 0 的整数。'
+  }
+
+  return createVenueValidationResult(fieldErrors)
 }
 
 export function findBookingConflict(bookings: Booking[], candidate: BookingTimeRange): Booking | null {

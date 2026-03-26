@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { assertVenueCanDelete, findBookingConflict, hasFutureVenueBookings, validateBookingDraft } from './rules'
-import type { Booking, BookingDraft } from './types'
+import {
+  assertVenueCanDelete,
+  findBookingConflict,
+  hasFutureVenueBookings,
+  validateBookingDraft,
+  validateVenueDraft,
+} from './rules'
+import type { Booking, BookingDraft, VenueDraft } from './types'
 
 function createBooking(overrides: Partial<Booking> = {}): Booking {
   return {
@@ -38,6 +44,21 @@ function createDraft(overrides: Partial<BookingDraft> = {}): BookingDraft {
   }
 }
 
+function createVenueDraft(overrides: Partial<VenueDraft> = {}): VenueDraft {
+  return {
+    name: 'Main Hall',
+    location: '1F East Wing',
+    capacity: 120,
+    hourlyPrice: 300,
+    amenities: ['projector', 'sound-system'],
+    openingTime: '08:00',
+    closingTime: '22:00',
+    status: 'active',
+    description: 'Primary event venue with full AV support.',
+    ...overrides,
+  }
+}
+
 describe('validateBookingDraft()', () => {
   it('rejects booking slots outside business hours', () => {
     const validation = validateBookingDraft(createDraft({ startTime: '07:00', endTime: '09:00' }))
@@ -59,6 +80,36 @@ describe('validateBookingDraft()', () => {
 
     assert.equal(validation.isValid, false)
     assert.equal(validation.fieldErrors.endTime, '预约时间必须为连续且结束时间晚于开始时间的整点时段。')
+  })
+})
+
+describe('validateVenueDraft()', () => {
+  it('requires venue name', () => {
+    const validation = validateVenueDraft(createVenueDraft({ name: '   ' }))
+
+    assert.equal(validation.isValid, false)
+    assert.equal(validation.fieldErrors.name, '请输入场地名称。')
+  })
+
+  it('rejects zero capacity', () => {
+    const validation = validateVenueDraft(createVenueDraft({ capacity: 0 }))
+
+    assert.equal(validation.isValid, false)
+    assert.equal(validation.fieldErrors.capacity, '容纳人数必须为大于 0 的整数。')
+  })
+
+  it('rejects negative hourly prices', () => {
+    const validation = validateVenueDraft(createVenueDraft({ hourlyPrice: -1 }))
+
+    assert.equal(validation.isValid, false)
+    assert.equal(validation.fieldErrors.hourlyPrice, '每小时价格必须为大于等于 0 的整数。')
+  })
+
+  it('accepts a valid venue draft', () => {
+    const validation = validateVenueDraft(createVenueDraft())
+
+    assert.equal(validation.isValid, true)
+    assert.deepEqual(validation.fieldErrors, {})
   })
 })
 
