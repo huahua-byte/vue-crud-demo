@@ -33,6 +33,7 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
 button,
@@ -69,7 +70,7 @@ a {
 
 .app-shell__container {
   display: grid;
-  gap: var(--spacing-lg);
+  gap: clamp(1rem, 2vw, 1.5rem);
   width: min(100%, 1200px);
   min-width: 0;
   margin: 0 auto;
@@ -95,6 +96,11 @@ a {
   min-width: 0;
 }
 
+.app-shell__content,
+.app-shell__content > * {
+  min-width: 0;
+}
+
 .app-shell__eyebrow {
   margin-bottom: var(--spacing-sm);
   color: var(--color-primary);
@@ -107,6 +113,7 @@ a {
 .app-shell__title {
   font-size: clamp(2.2rem, 5vw, 4rem);
   line-height: 0.94;
+  overflow-wrap: anywhere;
 }
 
 .app-shell__subtitle {
@@ -136,6 +143,7 @@ a {
 .app-shell__hero-value {
   font-size: 1.35rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .app-shell__hero-description {
@@ -150,6 +158,8 @@ a {
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
 }
 
 .app-shell__nav-link {
@@ -165,6 +175,7 @@ a {
     border-color 180ms ease,
     box-shadow 180ms ease,
     transform 180ms ease;
+  scroll-snap-align: start;
 }
 
 .app-shell__nav-link:hover {
@@ -241,6 +252,7 @@ a {
 .page-shell__title {
   font-size: clamp(1.5rem, 3vw, 2.2rem);
   line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
 .page-shell__description,
@@ -251,6 +263,7 @@ a {
 .page-shell__panel {
   display: grid;
   gap: var(--spacing-md);
+  width: 100%;
 }
 
 .page-shell__metric {
@@ -300,9 +313,18 @@ a {
     flex-basis: min(85vw, 280px);
   }
 
+  .app-shell__hero-side {
+    padding: 1rem;
+  }
+
   .page-shell__header,
   .page-shell__panel {
     padding: 1rem;
+  }
+
+  .page-shell__action {
+    justify-self: stretch;
+    width: 100%;
   }
 }
 
