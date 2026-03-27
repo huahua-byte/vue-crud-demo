@@ -22,21 +22,14 @@ jobs:
         with:
           ref: ${{ inputs.commit_sha || github.sha }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      - name: Stop old container
+        run: docker compose down 2>/dev/null || true
 
-      - name: Install dependencies
-        run: npm install
+      - name: Build and start
+        run: docker compose up -d --build
 
-      - name: Build (skip type check)
-        run: npx vite build
-
-      - name: Deploy
+      - name: Health check
         run: |
-          echo "=== Deploying to ${{ inputs.environment }} ==="
-          echo "Commit: ${{ inputs.commit_sha || github.sha }}"
-          echo "Build output:"
-          ls -la dist/
-          echo "=== Deploy to ${{ inputs.environment }} complete ==="
+          sleep 3
+          curl -sf http://localhost:4000 > /dev/null
+          echo "Deploy to ${{ inputs.environment }} success — app running at http://localhost:4000"
